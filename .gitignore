@@ -1,0 +1,16 @@
+# Environments
+venv/
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDEs
+.idea/
+.vscode/
+
+# Project specific
+tests.txt
+test_info.txt

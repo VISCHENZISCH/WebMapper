@@ -1,0 +1,19 @@
+#!/usr/bin/env python3
+# coding:utf-8
+
+import sys
+import web
+
+def main():
+    if len(sys.argv) < 2:
+        print("[!]Utilisation: python3 main.py <URL>")
+        sys.exit(1)
+
+    url = sys.argv[1]
+    print(f"[*] Début du scan sur : {url}")
+    
+    wc = web.WebCrawler(url)
+    wc.crawl()
+
+if __name__ == "__main__":
+    main()
