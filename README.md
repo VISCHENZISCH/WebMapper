@@ -41,14 +41,13 @@ python3 cli/main.py http://example.com
 ---
 ## Les tests
 ```bash
-python3 tests.
+python3 tests
 python3 test_tk.py
 ```
 ---
 ## Utilisation gui
 ```bash
 cd interfaces
-python3 interface_gui.
-python3 tests.py
+python3 interface_gui
 ```
   
