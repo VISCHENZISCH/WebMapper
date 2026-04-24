@@ -7,7 +7,7 @@ import mechanize
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 
-class WebCrawler:
+class WebScanner:
     def __init__(self, url, proxy=None, user_agent="Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0"):
         if url.endswith("/"):
             self.url = url.rstrip("/")
