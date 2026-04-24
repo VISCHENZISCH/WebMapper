@@ -26,7 +26,7 @@ Un scanner Web simple écrit en Python utilisant `mechanize` et `BeautifulSoup4`
    pip install -r requirements.txt
    ```
 
-## Utilisation
+## Utilisation cli
 
 Pour lancer le scan sur un site spécifique :
 
@@ -38,9 +38,17 @@ Exemple :
 ```bash
 python3 cli/main.py http://example.com
 ```
-
-
+---
+## Les tests
 ```bash
+python3 tests.
+python3 test_tk.py
+```
+---
+## Utilisation gui
+```bash
+cd interfaces
+python3 interface_gui.
 python3 tests.py
 ```
-
+  
