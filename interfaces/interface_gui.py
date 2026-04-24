@@ -94,7 +94,7 @@ class Toplevel1:
         ToolTip(self.Entry1, self.tooltip_font, '''URL au format http(s)://[...]''')
 
         self.Logo = tk.Button(top)
-        self.Logo.place(relx=0.025, rely=0.0, height=81, width=81)
+        self.Logo.place(relx=0.025, rely=0.0, height=110, width=110)
         self.Logo.configure(activebackground="#f9f9f9")
         self.Logo.configure(background="#c5d8d7")
         self.Logo.configure(highlightthickness="0")
