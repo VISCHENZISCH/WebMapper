@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+# coding:utf-8
+
+
 # Infos de test pour le Web Scanner
 
 # Cibles de test :
