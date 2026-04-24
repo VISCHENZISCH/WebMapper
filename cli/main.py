@@ -2,7 +2,7 @@
 # coding:utf-8
 
 import sys
-import web
+import web_scanner
 
 def main():
     if len(sys.argv) < 2:
@@ -11,9 +11,9 @@ def main():
 
     url = sys.argv[1]
     print(f"[*] Début du scan sur : {url}")
-    
-    wc = web.WebCrawler(url)
-    wc.crawl()
+
+    ws = web_scanner.WebScanner(url)
+    ws.crawl()
 
 if __name__ == "__main__":
     main()
