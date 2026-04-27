@@ -9,10 +9,10 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-echo -e "${BLUE}+ - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - ${NC}"
+echo -e "${BLUE}+ - + - + - + - + - + - + - + - + - + - + ${NC}"
 echo -e "${BLUE}║        WebMapper Installation          ║${NC}"
 echo -e "${BLUE}║         © 2025 Félix TOVIGNAN          ║${NC}"
-echo -e "${BLUE}+ - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - ${NC}"
+echo -e "${BLUE}+ - + - + - + - + - + - + - + - + - + - + ${NC}"
 echo -e "${NC}"
 
 # Vérifier Python
@@ -65,6 +65,7 @@ if [ ! -f "requirements.txt" ]; then
 fi
 
 # Installer les dépendances
+echo -e "${BLUE}+ - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - ${NC}"
 echo -e "${YELLOW}[*] Installation des dépendances...${NC}"
 pip install -r requirements.txt
 
@@ -85,9 +86,9 @@ fi
 chmod +x webmapper.sh
 
 echo ""
-echo -e "${GREEN}+ - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - ${NC}"
-echo -e "${GREEN}║    Installation réussie!               ║${NC}"
-echo -e "${GREEN}+ - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - ${NC}"
+echo -e "${GREEN}+ - + - + - + - + - + - + - + - + - + - + - + ${NC}"
+echo -e "${GREEN}║              Installation réussie!               ║${NC}"
+echo -e "${GREEN}+ - + - + - + - + - + - + - + - + - + - + - + ${NC}"
 echo ""
 echo -e "${BLUE} Prochaines étapes:${NC}"
 echo ""
@@ -98,3 +99,4 @@ echo -e "${BLUE} Documentation:${NC}"
 echo "  README.md         -         Aperçu du projet"
 echo ""
 echo -e "${GREEN}Prêt à scanner! ${NC}"
+echo -e "${BLUE}+ - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - ${NC}"

@@ -4,10 +4,10 @@ setlocal enabledelayedexpansion
 cls
 
 echo.
-echo + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - 
-echo ║    WebMapper Installation              ║
-echo ║    © 2025 Félix TOVIGNAN               ║
-echo + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - 
+echo + - + - + - + - + - + - + - + - + - + - + 
+echo ║       WebMapper Installation          ║
+echo ║       © 2025 Félix TOVIGNAN           ║
+echo + - + - + - + - + - + - + - + - + - + - + 
 echo.
 
 REM Vérifier Python
@@ -44,6 +44,7 @@ echo [*] Mise à jour de pip...
 python -m pip install --upgrade pip setuptools wheel >nul 2>&1
 
 REM Installer les dépendances
+echo + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - 
 echo [*] Installation des dépendances...
 pip install -r requirements.txt
 
@@ -55,13 +56,14 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - 
-echo ║    Installation réussie!               ║
-echo + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - 
+echo + - + - + - + - + - + - + - + - + - + - +  
+echo ║         Installation réussie!         ║
+echo + - + - + - + - + - + - + - + - + - + - +  
 echo.
 echo  Utiliser webmapper.bat:
-echo   webmapper.bat https://example.com
+echo  webmapper.bat https://example.com
 echo.
 echo Prêt à scanner!
 echo.
+echo + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - + - 
 pause
