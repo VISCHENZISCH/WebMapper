@@ -58,20 +58,6 @@ Lancez l'outil via le lanceur dédié :
 
 ---
 
-## Rapports d'Analyse
-
-Tous les résultats sont sauvegardés dans le dossier `OUTPUT/reports/`.
-Chaque scan génère des fichiers horodatés, ainsi qu'un lien direct vers le dernier rapport via :
-- `latest_report.html`
-- `latest_report.json`
-- `latest_report.csv`
-
----
-
-
-
----
-
 ## Clause de non-responsabilité
 
 Cet outil a été créé uniquement pour des tests d'intrusion autorisés. **Toute utilisation de cet outil sur des cibles sans autorisation préalable est strictement illégale.** L'auteur décline toute responsabilité en cas de mauvaise utilisation de ce logiciel.
