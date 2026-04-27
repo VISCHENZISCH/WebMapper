@@ -10,8 +10,8 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo -e "${BLUE}+ - + - + - + - + - + - + - + - + - + - + ${NC}"
-echo -e "${BLUE}║        WebMapper Installation          ║${NC}"
-echo -e "${BLUE}║         © 2025 Félix TOVIGNAN          ║${NC}"
+echo -e "${BLUE}║        WebMapper Installation         ║${NC}"
+echo -e "${BLUE}║         © 2025 Félix TOVIGNAN         ║${NC}"
 echo -e "${BLUE}+ - + - + - + - + - + - + - + - + - + - + ${NC}"
 echo -e "${NC}"
 
@@ -87,7 +87,7 @@ chmod +x webmapper.sh
 
 echo ""
 echo -e "${GREEN}+ - + - + - + - + - + - + - + - + - + - + - + ${NC}"
-echo -e "${GREEN}║              Installation réussie!               ║${NC}"
+echo -e "${GREEN}║              Installation réussie!        ║${NC}"
 echo -e "${GREEN}+ - + - + - + - + - + - + - + - + - + - + - + ${NC}"
 echo ""
 echo -e "${BLUE} Prochaines étapes:${NC}"
