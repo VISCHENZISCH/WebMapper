@@ -14,3 +14,6 @@ __pycache__/
 # Project specific
 tests.txt
 test_info.txt
+*.html
+*.csv
+*.json
