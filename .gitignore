@@ -14,8 +14,7 @@ __pycache__/
 # Project specific
 tests.txt
 test_info.txt
-cli/OUTPUT/
-OUTPUT/
+
 *.html
 *.csv
 *.json
