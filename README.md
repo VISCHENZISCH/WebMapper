@@ -1,53 +1,77 @@
-# Web Scanner & Crawler
+# WebMapper  v1.0
 
-Un scanner Web simple écrit en Python utilisant `mechanize` et `BeautifulSoup4` pour explorer récursivement les liens d'un site web.
+**WebMapper** est un outil de pointe pour l'audit de sécurité web. Conçu pour être à la fois modulaire, rapide et visuellement immersif, il permet de détecter les vulnérabilités courantes (XSS, SQLi, Cookies non sécurisés) et de générer des rapports détaillés.
 
-## Fonctionnalités
+© 2025 Félix TOVIGNAN
 
-- Exploration récursive des liens (Crawler).
-- Gestion des User-Agents.
-- Support des Proxies.
-- Extraction et gestion des cookies.
-- Filtrage des liens internes pour rester sur le domaine cible.
+---
+
+## Fonctionnalités Clés
+
+- **Crawling** : Exploration récursive des liens pour cartographier l'intégralité du domaine cible.
+- **Moteur de Détection Multi-Vecteurs** :
+    - **XSS (Cross-Site Scripting)** : Audit des paramètres d'URL et des formulaires avec injection de payloads intelligents.
+    - **Injection SQL** : Détection via analyse de signatures d'erreurs (MySQL, PostgreSQL, Oracle, etc.).
+- **Audit de Sécurité des Cookies** 
+- **Reporting Automatique** : Génération instantanée de rapports professionnels aux formats **HTML**, **JSON** et **CSV**.
+
+---
 
 ## Installation
 
-1. Clonez le dépôt 
-
-2. Déplacez vous dans le dossier du projet
-   ```bash
-   cd web_scanner
-   ```
-
-3. Créez un environnement virtuel et installez les dépendances :
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
-
-## Utilisation cli
-
-Pour lancer le scan sur un site spécifique :
-
+### Installation initiale
 ```bash
-python3 cli/main.py <URL>
+git clone https://github.com/VISCHENZISCH/WebMapper.git
+cd WebMapper
 ```
 
-Exemple :
+### Sur Linux (Méthode recommandée)
+Utilisez le script automatisé pour configurer l'environnement :
 ```bash
-python3 cli/main.py http://example.com
+chmod +x install.sh
+./install.sh
 ```
+
+### Sur Windows
+Double-cliquez sur `install.bat` ou utilisez PowerShell :
+```powershell
+.\install.bat
+```
+
 ---
-## Les tests
+
+## Utilisation
+
+Lancez l'outil via le lanceur dédié :
+
+### Linux
 ```bash
-python3 tests
-python3 test_tk.py
+./webmapper.sh
 ```
+
+### Windows
+```powershell
+.\webmapper.bat
+```
+
+> **Note :** Vous pouvez également passer l'URL directement en argument : `./webmapper.sh http://example.com`
+
 ---
-## Utilisation gui
-```bash
-cd interfaces
-python3 interface_gui
-```
-  
+
+## Rapports d'Analyse
+
+Tous les résultats sont sauvegardés dans le dossier `OUTPUT/reports/`.
+Chaque scan génère des fichiers horodatés, ainsi qu'un lien direct vers le dernier rapport via :
+- `latest_report.html`
+- `latest_report.json`
+- `latest_report.csv`
+
+---
+
+
+
+---
+
+## Clause de non-responsabilité
+
+Cet outil a été créé uniquement pour des tests d'intrusion autorisés. **Toute utilisation de cet outil sur des cibles sans autorisation préalable est strictement illégale.** L'auteur décline toute responsabilité en cas de mauvaise utilisation de ce logiciel.
