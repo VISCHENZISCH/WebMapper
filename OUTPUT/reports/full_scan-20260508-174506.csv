@@ -1,4 +1,0 @@
-Vulnerability,Vector,URL/Domain,Parameter/Name,Payload/Issue
-Cookie Security,INFO,github.com,_gh_sess,Secure:True HttpOnly:True
-Cookie Security,INFO,.github.com,_octo,Secure:True HttpOnly:False
-Cookie Security,INFO,.github.com,logged_in,Secure:True HttpOnly:True
