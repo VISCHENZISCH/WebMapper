@@ -9,7 +9,10 @@ Logique de détection :
   - Détection indirecte : erreur de parsing XML révélant que le DTD est interprété
 """
 import time
+import logging
 import requests
+
+logger = logging.getLogger("webmapper.xxe")
 
 DELAY = 0.5
 TIMEOUT = 10
@@ -65,8 +68,16 @@ XML_CONTENT_TYPES = [
 def scan(url: str, session: requests.Session) -> list[dict]:
     """
     Tente de détecter des vulnérabilités XXE via des requêtes POST avec payloads XML.
+    Teste toutes les combinaisons payload × content-type sans arrêt prématuré.
     """
     findings = []
+    seen = set()
+
+    def add_finding(f):
+        key = (f["type"], f.get("url"), f.get("evidence", "")[:40])
+        if key not in seen:
+            seen.add(key)
+            findings.append(f)
 
     for payload_body, payload_id in XXE_PAYLOADS:
         for content_type in XML_CONTENT_TYPES:
@@ -87,7 +98,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                 # Détection directe (LFI via XXE)
                 for sig in SUCCESS_SIGNATURES:
                     if sig.lower() in resp_lower:
-                        findings.append({
+                        add_finding({
                             "type": "XXE_LOCAL_FILE_INCLUSION",
                             "severity": "critical",
                             "url": url,
@@ -95,14 +106,13 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                                 "Injection XXE réussie : l'endpoint parse les entités XML externes "
                                 "et expose le contenu de fichiers locaux."
                             ),
-                            "evidence": f"Signature '{sig}' trouvée | Content-Type: {content_type}",
+                            "evidence": f"Signature '{sig}' trouvée | Content-Type: {content_type} | Payload: {payload_id}",
                         })
-                        return findings  # Trouver un seul suffit
 
                 # Détection indirecte (erreur de parser)
                 for sig in PARSER_ERROR_SIGNATURES:
                     if sig in resp_lower:
-                        findings.append({
+                        add_finding({
                             "type": "XXE_PARSER_ERROR_DISCLOSURE",
                             "severity": "high",
                             "url": url,
@@ -110,11 +120,14 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                                 "L'endpoint parse du XML et révèle des erreurs internes. "
                                 "Potentiellement vulnérable aux injections XXE."
                             ),
-                            "evidence": f"Erreur parser : '{sig}' | status {res.status_code}",
+                            "evidence": f"Erreur parser : '{sig}' | status {res.status_code} | Payload: {payload_id}",
                         })
-                        return findings
 
-            except Exception:
-                continue
+            except requests.exceptions.Timeout:
+                logger.debug("Timeout sur %s avec payload %s", url, payload_id)
+            except requests.exceptions.ConnectionError as exc:
+                logger.debug("Erreur connexion sur %s : %s", url, exc)
+            except Exception as exc:
+                logger.warning("Erreur inattendue module XXE sur %s : %s", url, exc)
 
     return findings

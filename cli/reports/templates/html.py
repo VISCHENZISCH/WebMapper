@@ -137,7 +137,7 @@ def generate(data: dict, filepath: str):
     </div>
 
     <div class="footer">
-        &copy; 2025 Félix TOVIGNAN — WebMapper v2.0 &nbsp;|&nbsp;
+        &copy; 2026 Félix TOVIGNAN — WebMapper v1.0 &nbsp;|&nbsp;
         <a href="https://github.com/VISCHENZISCH/WebMapper" style="color:#334155">GitHub</a>
     </div>
 </div>

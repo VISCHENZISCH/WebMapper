@@ -1,0 +1,27 @@
+{
+  "name": "exposed_git_config",
+  "type": "EXPOSED_GIT_CONFIG",
+  "severity": "high",
+  "detail": "Le fichier de configuration Git est accessible publiquement à l'adresse : {url}. Cela peut divulguer des clés d'accès privées, des URL de dépôts et des données de commits.",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/.git/config",
+      "matchers": [
+        {
+          "type": "status",
+          "status": 200
+        },
+        {
+          "type": "word",
+          "part": "body",
+          "condition": "and",
+          "words": [
+            "[core]",
+            "repositoryformatversion"
+          ]
+        }
+      ]
+    }
+  ]
+}

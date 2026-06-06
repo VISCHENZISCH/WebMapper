@@ -7,6 +7,7 @@ from .formatter import ResultFormatter
 from .templates import json as tpl_json
 from .templates import html as tpl_html
 from .templates import csv as tpl_csv
+from .templates import sarif as tpl_sarif
 
 
 class Reporter:
@@ -15,7 +16,7 @@ class Reporter:
     @staticmethod
     def generate_all(findings: list[dict], scan_type: str = "scan") -> dict:
         """
-        Génère les rapports HTML, JSON et CSV à partir de la liste de findings.
+        Génère les rapports HTML, JSON, CSV et SARIF à partir de la liste de findings.
 
         :param findings:  Liste de findings (format unifié)
         :param scan_type: Préfixe du nom de fichier (ex: full_scan, vuln_scan)
@@ -46,6 +47,12 @@ class Reporter:
         tpl_csv.generate(data, csv_path)
         shutil.copy2(csv_path, os.path.join(Reporter.output_dir, "latest_report.csv"))
         paths["csv"] = csv_path
+
+        # SARIF
+        sarif_path = os.path.join(Reporter.output_dir, f"{base}.sarif")
+        tpl_sarif.generate(data, sarif_path)
+        shutil.copy2(sarif_path, os.path.join(Reporter.output_dir, "latest_report.sarif"))
+        paths["sarif"] = sarif_path
 
         paths["latest_html"] = os.path.join(Reporter.output_dir, "latest_report.html")
         return paths
