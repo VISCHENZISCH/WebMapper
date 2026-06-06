@@ -1,0 +1,5 @@
+Vulnerability,Vector,URL/Domain,Parameter/Name,Payload/Issue
+Injection SQL,FORM,http://10.200.108.120/mutillidae/index.php?page=login.php,Multiple/Form,'a
+XSS,FORM,http://10.200.108.120/mutillidae/index.php?page=login.php,Multiple/Form,<script>alert('XSS')</script>
+XSS,URL,http://10.200.108.120/mutillidae/index.php?page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E,page,<script>alert('XSS')</script>
+Cookie Security,INFO,10.200.108.120,PHPSESSID,Secure:False HttpOnly:False

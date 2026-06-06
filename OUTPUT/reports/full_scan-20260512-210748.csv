@@ -1,0 +1,19 @@
+Vulnerability,Vector,URL/Domain,Parameter/Name,Payload/Issue
+Injection SQL,FORM,http://10.129.145.120/mutillidae/index.php?page=login.php,Multiple/Form,'e
+XSS,FORM,http://10.129.145.120/mutillidae/index.php?page=login.php,Multiple/Form,<script>alert('XSS')</script>
+XSS,URL,http://10.129.145.120/mutillidae/index.php?do=toggle-security&page=%22%3E%3Cscript%3Ealert%281%29%3C%2Fscript%3E,page,"""><script>alert(1)</script>"
+XSS,URL,http://10.129.145.120/mutillidae/index.php?do=toggle-security&page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E,page,<script>alert('XSS')</script>
+XSS,URL,http://10.129.145.120/mutillidae/index.php?page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E,page,<script>alert('XSS')</script>
+XSS,URL,http://10.129.145.120/mutillidae/index.php?do=toggle-security&page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E,page,<script>alert('XSS')</script>
+XSS,URL,http://10.129.145.120/mutillidae/index.php?do=toggle-hints&page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E,page,<script>alert('XSS')</script>
+XSS,URL,http://10.129.145.120/mutillidae/index.php?page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E,page,<script>alert('XSS')</script>
+XSS,URL,http://10.129.145.120/mutillidae/index.php?do=toggle-hints&page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E,page,<script>alert('XSS')</script>
+XSS,URL,http://10.129.145.120/mutillidae/index.php?do=toggle-security&page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E,page,<script>alert('XSS')</script>
+XSS,URL,http://10.129.145.120/mutillidae/index.php?page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E,page,<script>alert('XSS')</script>
+XSS,URL,http://10.129.145.120/mutillidae/index.php?do=toggle-security&page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E,page,<script>alert('XSS')</script>
+Injection SQL,FORM,http://10.129.145.120/mutillidae/index.php?page=user-info.php&page=user-info.php&username=%27f&password=%27f&user-info-php-submit-button=View+Account+Details,Multiple/Form,'f
+XSS,FORM,http://10.129.145.120/mutillidae/index.php?page=user-info.php,Multiple/Form,<script>alert('XSS')</script>
+XSS,URL,http://10.129.145.120/mutillidae/index.php?page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E,page,<script>alert('XSS')</script>
+Injection SQL,FORM,http://10.129.145.120/mutillidae/index.php?page=user-info.php&page=user-info.php&username=%27b&password=%27b&user-info-php-submit-button=View+Account+Details,Multiple/Form,'b
+Cookie Security,INFO,10.129.145.120,PHPSESSID,Secure:False HttpOnly:False
+Cookie Security,INFO,10.129.145.120,showhints,Secure:False HttpOnly:False

@@ -1,0 +1,12 @@
+{
+    "vulnerabilities": [],
+    "info": [
+        {
+            "type": "cookie",
+            "name": "PHPSESSID",
+            "domain": "10.200.108.120",
+            "secure": false,
+            "httponly": false
+        }
+    ]
+}

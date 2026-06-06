@@ -1,129 +1,163 @@
 #!/usr/bin/env python3
 # coding:utf-8
-
+"""
+WebMapper CLI
+"""
 import sys
 import os
 import web_scanner
 from reports.reporter import Reporter
 
 
-def show_banner():
-    banner = """
-    \033[92m\033[1m
-    __      __      ___.   _____                                             
-    /  \\    /  \\ ____\\_ |__ /     \\ _____  ______ ______   ___________ 
-    \\   \\/\\/   // __ \\| __ \\  \\ /  \\\\__  \\ \\____ \\\\____ \\_/ __ \\_  __ \\
-     \\        /\\  ___/| \\_\\ \\   Y  / / __ \\|  |_> >  |_> >\\  ___/|  | \\/
-      \\__/\\  /  \\___  >___  /__|_|  /(____  /   __/|   __/  \\___  >__|   
-           \\/       \\/    \\/      \\/      \\/|__|   |__|         \\/       
-    \033[0m
-    \033[92m\033[1mWebMapper v1.0   --------------------------------------  CLI Edition\033[0m
-                                \033[33m© 2025 Félix TOVIGNAN\033[0m
-                    \033[96mhttps://github.com/VISCHENZISCH/WebMapper.git\033[0m
-    """
-    print(banner)
+#Constantes ANSI 
 
-def clear_terminal():
-    os.system('cls' if os.name == 'nt' else 'clear')
+RESET  = "\033[0m"
+BOLD   = "\033[1m"
+RED    = "\033[91m"
+GREEN  = "\033[92m"
+YELLOW = "\033[93m"
+BLUE   = "\033[94m"
+CYAN   = "\033[96m"
+WHITE  = "\033[97m"
+DIM    = "\033[2m"
 
-def ask_to_continue():
-    print("\n" + "\033[94m+ - \033[0m"*25)
-    choice = input("\033[94m[?]\033[0m Voulez-vous continuer à utiliser WebMapper ? (o/n) : ").lower()
-    if choice == 'o':
+
+#Helpers
+
+def c(color: str, text: str, bold: bool = False) -> str:
+    """Applique une couleur ANSI à un texte."""
+    return f"{BOLD if bold else ''}{color}{text}{RESET}"
+
+
+def show_banner() -> None:
+    print(f"""{BLUE}{BOLD}
+    __      __      ___. _____                                          
+   /  \\    /  \\ ____\\_ |__/     \\ _____  ______ ______   ___________  
+   \\   \\/\\/   // __ \\| __ \\  \\ /  \\\\__  \\ \\____ \\\\____ \\_/ __ \\_  __ \\
+    \\        /\\  ___/| \\_\\ \\   Y  / / __ \\|  |_> >  |_> >\\  ___/|  | \\/
+     \\__/\\  /  \\___  >___  /__|_|  /(____  /   __/|   __/  \\___  >__|   
+          \\/       \\/    \\/      \\/      \\/|__|   |__|         \\/       
+{RESET}
+{c(GREEN, 'WebMapper v1.0', bold=True)}   {c(DIM + WHITE, '---------------------------------------------')}  {c(GREEN, 'CLI Edition', bold=True)}
+                          {c(YELLOW, '© 2025 Félix TOVIGNAN')}
+              {c(CYAN, 'https://github.com/VISCHENZISCH/WebMapper.git')}
+""")
+
+
+def clear_terminal() -> None:
+    os.system("cls" if os.name == "nt" else "clear")
+
+
+def ask_to_continue() -> bool:
+    print("\n" + c(BLUE, "+ - ") * 25)
+    choice = input(f"{c(BLUE, '[?]')} Continuer à utiliser WebMapper ? (o/n) : ").strip().lower()
+    if choice == "o":
         clear_terminal()
         show_banner()
         return True
-    
-    print("\n\033[92m[*] Merci d'avoir utilisé WebMapper. À bientôt !\033[0m")
+    print(f"\n{c(GREEN, '[*] Merci d\'avoir utilisé WebMapper. À bientôt !')}")
     return False
 
-def main():
-    show_banner()
-    if len(sys.argv) < 2:
-        url = input("\033[94m[?]\033[0m \033[97mEntrez l'URL cible (ex: http://example.com) :\033[0m ")
-        if not url:
-            print("\033[91m[!] Erreur: Une URL est requise.\033[0m")
-            sys.exit(1)
+
+def print_report_paths(paths: dict) -> None:
+    print(f"\n{c(BLUE, '[+] Rapports générés :')}")
+    print(f"    {c(WHITE, 'HTML')} : {c(CYAN, paths.get('html', '-'))}")
+    print(f"    {c(WHITE, 'JSON')} : {c(CYAN, paths.get('json', '-'))}")
+    print(f"    {c(WHITE, 'CSV')}  : {c(CYAN, paths.get('csv',  '-'))}")
+
+
+#Menu 
+
+def print_menu() -> None:
+    items = [
+        ("1", "Scan Complet",       "FULL", "Crawl + tous les modules"),
+        ("2", "Scan Direct",        "FAST", "URL cible uniquement, sans crawl"),
+        ("3", "Crawler uniquement", "MAP",  "Découverte de liens"),
+        ("4", "Quitter",            "",     ""),
+    ]
+    print(f"\n{c(YELLOW, '║  Utilisation réservée aux tests autorisés uniquement.')}")
+    sep = c(RED, "══════════════", bold=True)
+    print(f"{c(BLUE, '[ ✔✘!?→ ]')} {sep} {c(GREEN, 'MENU DE SCAN', bold=True)} {sep} {c(BLUE, '[ ✔✘!?→ ]')}\n")
+    for num, label, badge, desc in items:
+        badge_str = f" {c(CYAN, f'[{badge}]')}" if badge else ""
+        desc_str  = f"  {c(DIM + WHITE, desc)}" if desc else ""
+        print(f"  {c(BLUE, num, bold=True)}.  {c(WHITE, label, bold=True)}{badge_str}{desc_str}")
+
+
+#Dispatcher
+
+ACTIONS = {
+    "1": ("run_full_scan",  "full_scan",   "Scan complet"),
+    "2": ("run_vuln_scan",  "direct_scan", "Analyse directe"),
+}
+
+
+def run_action(ws, action_key: str) -> None:
+    method_name, report_key, label = ACTIONS[action_key]
+    try:
+        getattr(ws, method_name)()
+        print(f"\n{c(GREEN, f'[*] {label} terminé.')}")
+    except KeyboardInterrupt:
+        print(f"\n{c(YELLOW, '[!] Scan interrompu.')}")
+
+    if ws.findings:
+        paths = Reporter.generate_all(ws.findings, report_key)
+        print_report_paths(paths)
     else:
-        url = sys.argv[1]
+        print(f"\n{c(WHITE, '[i] Aucun finding détecté.')}")
 
-    ws = web_scanner.WebScanner(url)
 
+#Boucle principale
+
+def menu_loop(ws, url: str) -> None:
     while True:
-        print(f"\n\033[93m║  Utilisation réservée aux tests autorisés.          ")
-        print(f"║  Toute utilisation non autorisée est illégale.      \033[0m")
-        print(f"\n\033[94m[ ✔✘!?→ ] \033[91m\033[1m════════════════════ \033[92m\033[1mMENU DE SCAN\033[0m \033[91m\033[1m════════════════════\033[0m \033[94m[ ✔✘!?→ ]\033[0m\n")
-        print("1. \033[94m\033[1mScan Complet\033[0m \033[97m(Crawl + Vulnérabilités)\033[0m")
-        print("2. \033[94m\033[1mCrawler uniquement\033[0m \033[97m(Découverte de liens)\033[0m")
-        print("3. \033[94m\033[1mAnalyse de vulnérabilités\033[0m \033[97m(Sur l'URL cible)\033[0m")
-        print("4. \033[94m\033[1mAnalyse des cookies\033[0m \033[97m(Audit de sécurité)\033[0m")
-        print("5. \033[97mQuitter\033[0m")
-        
-        choice = input("\n\033[94m[?]\033[0m \033[97mChoisissez une option :\033[0m ")
+        print_menu()
+        choice = input(f"\n{c(BLUE, '[?]')} {c(WHITE, 'Choisissez une option :')} ").strip()
 
-        if choice == "1":
-            try:
-                print(f"\n\033[94m[*] Début du scan complet sur :\033[0m \033[96m{url}\033[0m")
-                ws.crawl()
-                ws.check_vulnerabilities()
-                print("\n\033[92m[*] Scan complet terminé.\033[0m")
-            except KeyboardInterrupt:
-                print("\n\033[93m[!] Scan interrompu par l'utilisateur. Exportation des données partielles...\033[0m")
-            
-            # Génération des rapports (toujours, même si interrompu)
-            if ws.results_list:
-                paths = Reporter.generate_all(ws.results_list, "full_scan")
-                print(f"\n\033[94m[+] Rapports générés :\033[0m")
-                print(f"    - HTML : {paths['html']}")
-                print(f"    - JSON : {paths['json']}")
-                print(f"    - CSV  : {paths['csv']}")
-            else:
-                print("\n\033[97m[i] Aucun résultat à exporter.\033[0m")
-            
-            if not ask_to_continue(): break
-
-        elif choice == "2":
-            try:
-                print(f"\n\033[94m[*] Lancement du crawler sur :\033[0m \033[96m{url}\033[0m")
-                ws.crawl()
-                print("\n\033[92m[*] Crawling terminé.\033[0m")
-            except KeyboardInterrupt:
-                print("\n\033[93m[!] Crawling interrompu.\033[0m")
-            if not ask_to_continue(): break
+        if choice in ("1", "2"):
+            run_action(ws, choice)
+            if not ask_to_continue():
+                break
 
         elif choice == "3":
             try:
-                print(f"\n\033[94m[*] Analyse de vulnérabilités sur :\033[0m \033[96m{url}\033[0m")
-                ws.link_list = [url]
-                ws.check_vulnerabilities()
-                print("\n\033[92m[*] Analyse terminée.\033[0m")
+                print(f"\n{c(BLUE, '[*] Crawling sur :')} {c(CYAN, url)}")
+                ws.crawl()
+                n = len(ws.link_list)
+                print(f"\n{c(GREEN, f'[*] Crawling terminé — {n} URL(s) découverte(s).')}")
+                for lnk in ws.link_list:
+                    print(f"   {c(CYAN, lnk)}")
             except KeyboardInterrupt:
-                print("\n\033[93m[!] Analyse interrompue. Exportation des données...\033[0m")
-            
-            if ws.results_list:
-                paths = Reporter.generate_all(ws.results_list, "vuln_scan")
-                print(f"\n\033[94m[+] Rapports générés :\033[0m")
-                print(f"    - HTML : {paths['html']}")
-            if not ask_to_continue(): break
+                print(f"\n{c(YELLOW, '[!] Crawl interrompu.')}")
+
+            if not ask_to_continue():
+                break
 
         elif choice == "4":
-            try:
-                print(f"\n\033[94m[*] Audit de sécurité des cookies sur :\033[0m \033[96m{url}\033[0m")
-                ws.check_cookies()
-                print("\n\033[92m[*] Analyse des cookies terminée.\033[0m")
-            except KeyboardInterrupt:
-                print("\n\033[93m[!] Audit interrompu.\033[0m")
-            
-            if ws.results_list:
-                paths = Reporter.generate_all(ws.results_list, "cookie_audit")
-                print(f"\n\033[94m[+] Rapports générés :\033[0m")
-                print(f"    - HTML : {paths['html']}")
-            if not ask_to_continue(): break
-        elif choice == "5":
-            print("\033[92m[*] Merci d'avoir utilisé WebMapper. À bientôt !\033[0m")
+            print(c(GREEN, "[*] Merci d'avoir utilisé WebMapper. À bientôt !"))
             sys.exit(0)
+
         else:
-            print("\033[91m[!] Choix invalide.\033[0m")
+            print(c(RED, "[!] Choix invalide."))
+
+
+#Entrée 
+
+def main() -> None:
+    show_banner()
+
+    # URL depuis l'argument CLI ou saisie interactive
+    if len(sys.argv) >= 2:
+        url = sys.argv[1]
+    else:
+        url = input(f"{c(BLUE, '[?]')} {c(WHITE, 'Entrez l\'URL cible (ex: http://example.com) :')} ").strip()
+        if not url:
+            print(c(RED, "[!] URL requise."))
+            sys.exit(1)
+
+    ws = web_scanner.WebScanner(url)
+    menu_loop(ws, url)
+
 
 if __name__ == "__main__":
     main()

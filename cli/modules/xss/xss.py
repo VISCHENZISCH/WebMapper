@@ -1,181 +1,138 @@
 #!/usr/bin/env python3
 # coding:utf-8
+"""
+Module de détection XSS — refactorisé selon la nouvelle convention.
+Expose : scan(url, session) -> list[dict]
+
+Logique :
+  - Injecter des payloads XSS dans les paramètres GET et les formulaires HTML
+  - Détecter si le payload est reflété sans encodage dans la réponse
+"""
+import html as html_module
+import time
 import urllib.parse
-import html
 import requests
 from bs4 import BeautifulSoup
-from dataclasses import dataclass, field
-from typing import List
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 
-@dataclass
-class XSSResult:
-    vulnerable: bool = False
-    findings: List[dict] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
+DELAY = 0.5
+TIMEOUT = 10
 
-    def add_finding(self, type_, url, param, payload):
-        self.vulnerable = True
-        self.findings.append({
-            "vuln_type": "XSS",
-            "type": type_,
-            "url": url,
-            "param": param,
-            "payload": payload
-        })
+XSS_PAYLOADS = [
+    "<script>alert('XSS')</script>",
+    '"><script>alert(1)</script>',
+    "'><script>alert(1)</script>",
+    "<img src=x onerror=alert(1)>",
+    "<svg/onload=alert(1)>",
+    '"><img src=x onerror=alert(1)>',
+    "';alert(1)//",
+    "<body onload=alert(1)>",
+]
 
-    def summary(self):
-        res_str = ""
-        for f in self.findings:
-            res_str += f"[X] XSS ({f['type']}) dans '{f['param']}': {f['url']}\n"
-        return res_str
 
-class XSSModule:
-    DEFAULT_PAYLOADS = [
-        "<script>alert('XSS')</script>",
-        '"><script>alert(1)</script>',
-        "'><script>alert(1)</script>",
-        "<img src=x onerror=alert(1)>",
-        "<svg/onload=alert(1)>",
-        "javascript:alert(1)",
-        '"><img src=x onerror=alert(1)>',
-        "';alert(1)//",
-    ]
+def _is_reflected(response_text: str, payload: str) -> bool:
+    """Vérifie si le payload est reflété (brut ou partiellement encodé)."""
+    if payload in response_text:
+        return True
+    if payload in html_module.unescape(response_text):
+        return True
+    return False
 
-    @staticmethod
-    def create_session():
-        session = requests.Session()
-        # Retry automatique sur erreurs réseau
-        retry = Retry(
-            total=3,
-            backoff_factor=0.5,
-            status_forcelist=[500, 502, 503, 504]
-        )
-        adapter = HTTPAdapter(max_retries=retry)
-        session.mount("http://", adapter)
-        session.mount("https://", adapter)
 
-        # Headers pour paraître légitime
-        session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
-        })
-        return session
-
-    @staticmethod
-    def _is_vulnerable(response_text, payload):
-        """
-        Vérifie si le payload est reflété sans encodage
-        """
-        # Le payload brut est présent (non encodé)
-        if payload in response_text:
-            return True
-        # Vérifier aussi les variantes partiellement encodées
-        decoded = html.unescape(response_text)
-        if payload in decoded:
-            return True
-        return False
-
-    @staticmethod
-    def _extract_form_params(form, payload):
-        """
-        Extrait tous les champs du formulaire (input, textarea, select)
-        """
-        params = {}
-        # Inputs classiques
-        for input_ in form.find_all("input"):
-            name = input_.get("name")
-            if not name:
-                continue
-            input_type = input_.get("type", "text").lower()
-            if input_type in ["text", "password", "email", "search", "url"]:
-                params[name] = payload
-            elif input_type == "hidden":
-                params[name] = input_.get("value", "")
-            elif input_type in ["submit", "button"]:
-                params[name] = input_.get("value", "submit")
-
-        # Textareas
-        for textarea in form.find_all("textarea"):
-            name = textarea.get("name")
-            if name:
-                params[name] = payload
-
-        # Selects — prendre la première option disponible
-        for select in form.find_all("select"):
-            name = select.get("name")
-            if not name:
-                continue
+def _extract_form_params(form, payload: str) -> dict:
+    """Remplit les champs texte d'un formulaire avec le payload XSS."""
+    params = {}
+    for inp in form.find_all("input"):
+        name = inp.get("name")
+        if not name:
+            continue
+        itype = (inp.get("type") or "text").lower()
+        if itype in ("text", "password", "email", "search", "url"):
+            params[name] = payload
+        elif itype == "hidden":
+            params[name] = inp.get("value", "")
+        elif itype in ("submit", "button"):
+            params[name] = inp.get("value", "submit")
+    for textarea in form.find_all("textarea"):
+        name = textarea.get("name")
+        if name:
+            params[name] = payload
+    for select in form.find_all("select"):
+        name = select.get("name")
+        if name:
             option = select.find("option")
             params[name] = option.get("value", "") if option else ""
+    return params
 
-        return params
 
-    @staticmethod
-    def check_form(session, page_url, page_source, payloads=None):
-        if page_source is None:
-            return XSSResult()
+def scan(url: str, session: requests.Session) -> list[dict]:
+    """
+    Détecte les vulnérabilités XSS reflected via paramètres GET et formulaires.
+    """
+    findings = []
+    time.sleep(DELAY)
 
-        if payloads is None:
-            payloads = XSSModule.DEFAULT_PAYLOADS
-            
-        result = XSSResult()
-        soup = BeautifulSoup(page_source, "html.parser")
-        forms = soup.find_all("form")
-        
-        for form in forms:
-            form_action = form.get("action", "")
-            form_method = form.get("method", "GET").upper()
-            target_url = urllib.parse.urljoin(page_url, form_action)
-            
-            for payload in payloads:
-                params = XSSModule._extract_form_params(form, payload)
-                try:
-                    if form_method == "GET":
-                        res = session.get(target_url, params=params, timeout=10)
-                    else:
-                        res = session.post(target_url, data=params, timeout=10)
-                    
-                    if XSSModule._is_vulnerable(res.text, payload):
-                        # On identifie quel paramètre est vulnérable (approximatif ici car on injecte partout)
-                        result.add_finding("FORM", target_url, "Multiple/Form", payload)
-                        break # Passer au formulaire suivant après détection
-                except Exception as e:
-                    result.errors.append(f"Erreur formulaire sur {target_url}: {e}")
-        
-        return result
+    try:
+        response = session.get(url, timeout=TIMEOUT)
+        soup = BeautifulSoup(response.text, "html.parser")
+    except Exception:
+        return []
 
-    @staticmethod
-    def check_link(session, page_url, payloads=None):
-        if "=" not in page_url:
-            return XSSResult()
-        
-        if payloads is None:
-            payloads = XSSModule.DEFAULT_PAYLOADS
-        
-        result = XSSResult()
-        parsed = urllib.parse.urlparse(page_url)
-        params = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
+    #Paramètres GET dans l'URL 
+    parsed = urllib.parse.urlparse(url)
+    url_params = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
 
-        for key in params:
-            original_values = params[key]
-            for payload in payloads:
-                test_params = dict(params)
-                test_params[key] = [payload] # parse_qs values are lists
-                
-                new_query = urllib.parse.urlencode(test_params, doseq=True)
-                test_url = parsed._replace(query=new_query).geturl()
+    for param_name, orig_values in url_params.items():
+        for payload in XSS_PAYLOADS:
+            test = dict(url_params)
+            test[param_name] = [payload]
+            new_query = urllib.parse.urlencode(test, doseq=True)
+            test_url = parsed._replace(query=new_query).geturl()
+            try:
+                time.sleep(DELAY)
+                res = session.get(test_url, timeout=TIMEOUT)
+                if _is_reflected(res.text, payload):
+                    findings.append({
+                        "type": "XSS_REFLECTED",
+                        "severity": "high",
+                        "url": url,
+                        "detail": f"XSS Reflected détecté sur le paramètre GET '{param_name}'.",
+                        "evidence": f"Payload reflété : {payload[:80]}",
+                    })
+                    break  # Passer au paramètre suivant
+            except Exception:
+                pass
 
-                try:
-                    res = session.get(test_url, timeout=10)
-                    if XSSModule._is_vulnerable(res.text, payload):
-                        result.add_finding("URL", test_url, key, payload)
-                        break  # passer au paramètre suivant
-                except Exception as e:
-                    result.errors.append(f"Erreur sur {test_url}: {e}")
-                    continue
-            
-            params[key] = original_values  # restaurer
+    #Formulaires HTML
+    for form in soup.find_all("form"):
+        action = form.get("action", "")
+        method = (form.get("method", "GET")).upper()
+        target_url = urllib.parse.urljoin(url, action)
+        found = False
 
-        return result
+        for payload in XSS_PAYLOADS:
+            params = _extract_form_params(form, payload)
+            if not params:
+                break
+            try:
+                time.sleep(DELAY)
+                if method == "POST":
+                    res = session.post(target_url, data=params, timeout=TIMEOUT)
+                else:
+                    res = session.get(target_url, params=params, timeout=TIMEOUT)
+
+                if _is_reflected(res.text, payload):
+                    findings.append({
+                        "type": "XSS_REFLECTED",
+                        "severity": "high",
+                        "url": target_url,
+                        "detail": f"XSS Reflected détecté dans le formulaire {method} (action: '{action}').",
+                        "evidence": f"Payload reflété : {payload[:80]}",
+                    })
+                    found = True
+                    break
+            except Exception:
+                pass
+        if found:
+            break
+
+    return findings

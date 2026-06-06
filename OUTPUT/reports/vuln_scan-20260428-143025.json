@@ -1,0 +1,34 @@
+{
+    "vulnerabilities": [
+        {
+            "vuln_type": "Injection SQL",
+            "type": "FORM",
+            "url": "http://10.200.108.120/mutillidae/index.php?page=login.php",
+            "param": "Multiple/Form",
+            "payload": "'a"
+        },
+        {
+            "vuln_type": "XSS",
+            "type": "FORM",
+            "url": "http://10.200.108.120/mutillidae/index.php?page=login.php",
+            "param": "Multiple/Form",
+            "payload": "<script>alert('XSS')</script>"
+        },
+        {
+            "vuln_type": "XSS",
+            "type": "URL",
+            "url": "http://10.200.108.120/mutillidae/index.php?page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E",
+            "param": "page",
+            "payload": "<script>alert('XSS')</script>"
+        }
+    ],
+    "info": [
+        {
+            "type": "cookie",
+            "name": "PHPSESSID",
+            "domain": "10.200.108.120",
+            "secure": false,
+            "httponly": false
+        }
+    ]
+}

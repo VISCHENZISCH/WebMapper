@@ -1,114 +1,121 @@
 #!/usr/bin/env python3
 # coding:utf-8
+"""
+Expose : scan(url, session) -> list[dict]
+
+Logique :
+  - Error-based : injecter ' dans chaque paramètre GET/formulaire et chercher des erreurs SQL
+  - Tester à la fois les formulaires et les paramètres URL
+"""
+import time
 import random
 import urllib.parse
+import requests
 from bs4 import BeautifulSoup
-from dataclasses import dataclass, field
-from typing import List
 
-@dataclass
-class SQLIResult:
-    vulnerable: bool = False
-    findings: List[dict] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
+DELAY = 0.5
+TIMEOUT = 10
 
-    def add_finding(self, type_, url, param, payload):
-        self.vulnerable = True
-        self.findings.append({
-            "vuln_type": "Injection SQL",
-            "type": type_,
-            "url": url,
-            "param": param,
-            "payload": payload
-        })
+SQLI_PAYLOADS = ["'", "''", "' OR '1'='1", "' OR 1=1--", "1' ORDER BY 1--"]
 
-    def summary(self):
-        res_str = ""
-        for f in self.findings:
-            res_str += f"[!] INJECTION SQL ({f['type']}) dans '{f['param']}': {f['url']}\n"
-        return res_str
+# Signatures d'erreurs de base de données
+ERROR_SIGNATURES = [
+    "you have an error in your sql syntax",
+    "warning: mysql_fetch_array()",
+    "unclosed quotation mark",
+    "postgresql query failed",
+    "sqlserver exception",
+    "ora-01756", "ora-00907", "oracle error",
+    "syntax error", "quoted string not properly terminated",
+    "mysql_num_rows()", "pg_query()",
+    "sqlite3.operationalerror", "microsoft ole db provider for sql server",
+]
 
-class SQLIModule:
-    @staticmethod
-    def _is_vulnerable(response_text):
-        errors = [
-            "You have an error in your SQL syntax;",
-            "warning: mysql_fetch_array()",
-            "unclosed quotation mark",
-            "PostgreSQL query failed:",
-            "SQLServer exception",
-            "Oracle error:",
-        ]
-        for error in errors:
-            if error.lower() in response_text.lower():
-                return True
-        return False
 
-    @staticmethod
-    def check_form(session, page_url, page_source):
-        if page_source is None:
-            return SQLIResult()
-        
-        result = SQLIResult()
-        soup = BeautifulSoup(page_source, "html.parser")
-        forms_list = soup.find_all("form")
-        payload_ = "'" + random.choice("abcdefg")
+def _is_sqli(text: str) -> str | None:
+    """Retourne la signature détectée ou None."""
+    lower = text.lower()
+    for sig in ERROR_SIGNATURES:
+        if sig in lower:
+            return sig
+    return None
 
-        for form in forms_list:
-            form_action = form.get("action") or ""
-            form_method = (form.get("method") or "GET").upper()
-            target_url = urllib.parse.urljoin(page_url, form_action)
 
-            input_lists = form.find_all("input")
-            params_list = {}
-            for input_ in input_lists:
-                input_name = input_.get("name")
-                if not input_name: continue
-                
-                input_type = (input_.get("type") or "text").lower()
-                input_value = input_.get("value") or ""
+def scan(url: str, session: requests.Session) -> list[dict]:
+    """
+    Détecte les injections SQL error-based via paramètres GET et formulaires.
+    """
+    findings = []
+    time.sleep(DELAY)
 
-                if input_type in ["text", "password"]:
-                    params_list[input_name] = payload_
-                else:
-                    params_list[input_name] = input_value
+    try:
+        response = session.get(url, timeout=TIMEOUT)
+        soup = BeautifulSoup(response.text, "html.parser")
+    except Exception:
+        return []
 
+    #Paramètres GET dans l'URL
+    parsed = urllib.parse.urlparse(url)
+    url_params = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
+
+    for payload in SQLI_PAYLOADS:
+        for param_name in url_params:
+            test = {k: (v[0] + payload) for k, v in url_params.items()}
             try:
-                if form_method == "GET":
-                    res = session.get(target_url, params=params_list, timeout=10)
-                else:
-                    res = session.post(target_url, data=params_list, timeout=10)
+                time.sleep(DELAY)
+                res = session.get(url, params=test, timeout=TIMEOUT)
+                sig = _is_sqli(res.text)
+                if sig:
+                    findings.append({
+                        "type": "SQL_INJECTION_ERROR_BASED",
+                        "severity": "critical",
+                        "url": url,
+                        "detail": f"Injection SQL détectée sur le paramètre GET '{param_name}'.",
+                        "evidence": f"Signature : '{sig}' | Payload : {payload}",
+                    })
+                    return findings
+            except Exception:
+                pass
 
-                if SQLIModule._is_vulnerable(res.text):
-                    result.add_finding("FORM", res.url, "Multiple/Form", payload_)
-            except Exception as e:
-                result.errors.append(str(e))
+    #Formulaires HTML
+    for form in soup.find_all("form"):
+        action = form.get("action", "")
+        method = (form.get("method", "GET")).upper()
+        target_url = urllib.parse.urljoin(url, action)
 
-        return result
+        # Construction des paramètres avec le payload
+        payload = random.choice(SQLI_PAYLOADS)
+        form_data = {}
+        for inp in form.find_all("input"):
+            name = inp.get("name")
+            if not name:
+                continue
+            itype = (inp.get("type") or "text").lower()
+            if itype in ("text", "password", "email", "search"):
+                form_data[name] = payload
+            else:
+                form_data[name] = inp.get("value", "")
 
-    @staticmethod
-    def check_link(session, page_url):
-        if "=" not in page_url:
-            return SQLIResult()
-            
-        result = SQLIResult()
-        parsed = urllib.parse.urlparse(page_url)
-        params = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
-        payload_ = "'" + random.choice("abcdefgehlk")
+        if not form_data:
+            continue
 
-        for key in params:
-            original_values = params[key]
-            test_params = dict(params)
-            test_params[key] = [payload_]
-            
-            new_query = urllib.parse.urlencode(test_params, doseq=True)
-            test_url = parsed._replace(query=new_query).geturl()
+        try:
+            time.sleep(DELAY)
+            if method == "POST":
+                res = session.post(target_url, data=form_data, timeout=TIMEOUT)
+            else:
+                res = session.get(target_url, params=form_data, timeout=TIMEOUT)
+            sig = _is_sqli(res.text)
+            if sig:
+                findings.append({
+                    "type": "SQL_INJECTION_ERROR_BASED",
+                    "severity": "critical",
+                    "url": target_url,
+                    "detail": f"Injection SQL détectée sur le formulaire {method} (action: '{action}').",
+                    "evidence": f"Signature : '{sig}' | Payload : {payload}",
+                })
+                return findings
+        except Exception:
+            pass
 
-            try:
-                res = session.get(test_url, timeout=10)
-                if SQLIModule._is_vulnerable(res.text):
-                    result.add_finding("URL", res.url, key, payload_)
-            except Exception as e:
-                result.errors.append(str(e))
-        
-        return result
+    return findings

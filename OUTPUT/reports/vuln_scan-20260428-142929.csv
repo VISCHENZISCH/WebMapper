@@ -1,0 +1,2 @@
+Vulnerability,Vector,URL/Domain,Parameter/Name,Payload/Issue
+Cookie Security,INFO,10.200.108.120,PHPSESSID,Secure:False HttpOnly:False
