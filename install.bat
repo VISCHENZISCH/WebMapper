@@ -6,7 +6,7 @@ cls
 echo.
 echo + - + - + - + - + - + - + - + - + - + - + 
 echo ║       WebMapper Installation          ║
-echo ║       © 2025 Félix TOVIGNAN           ║
+echo ║       © 2026 Félix TOVIGNAN           ║
 echo + - + - + - + - + - + - + - + - + - + - + 
 echo.
 

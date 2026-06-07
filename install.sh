@@ -11,7 +11,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}+ - + - + - + - + - + - + - + - + - + - + ${NC}"
 echo -e "${BLUE}║        WebMapper Installation         ║${NC}"
-echo -e "${BLUE}║         © 2025 Félix TOVIGNAN         ║${NC}"
+echo -e "${BLUE}║         © 2026 Félix TOVIGNAN         ║${NC}"
 echo -e "${BLUE}+ - + - + - + - + - + - + - + - + - + - + ${NC}"
 echo -e "${NC}"
 
