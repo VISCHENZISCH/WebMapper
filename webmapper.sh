@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Lanceur spécial WebMapper CLI
 
 # Vérifier si venv existe
 if [ ! -d "venv" ]; then

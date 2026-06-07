@@ -62,9 +62,15 @@ chmod +x install.sh
 ```
 
 ### Options CLI
-```
-usage: main.py [-h] [-t THREADS] [--proxy PROXY] [--no-rotate-ua] [-v] [url]
+```bash
+# Linux
+usage: ./webmapper.sh [-h] [-t THREADS] [--proxy PROXY] [--no-rotate-ua] [-v] [url]
 
+# Windows
+usage: .\webmapper.bat [-h] [-t THREADS] [--proxy PROXY] [--no-rotate-ua] [-v] [url]
+```
+
+```
 positional arguments:
   url                   URL cible (ex: http://example.com)
 
