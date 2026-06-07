@@ -4,6 +4,8 @@
 
 © 2026 Félix TOVIGNAN
 
+![WebMapper preview](img/img-pr.png)
+
 ---
 
 ## Fonctionnalités
