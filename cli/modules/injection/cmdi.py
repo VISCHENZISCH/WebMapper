@@ -117,7 +117,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                         "evidence": f"Signature : '{sig}' | Payload : {payload}",
                     })
 
-    # 2. Formulaires HTML — helper partagé
+    # 2. Formulaires HTML - helper partagé
     for form in soup.find_all("form"):
         action = form.get("action", "")
         method = (form.get("method", "GET")).upper()

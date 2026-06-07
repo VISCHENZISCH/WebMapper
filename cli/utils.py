@@ -7,10 +7,154 @@ Utilitaires partagés entre tous les modules de WebMapper.
   - Calcul de similarité (analyse différentielle)
   - Obfuscation de payloads (évasion WAF)
   - Extraction unifiée des champs de formulaires HTML
+  - Layout terminal (body, margin, padding, font-size)
 """
+import os
+import textwrap
 import urllib.parse
 import difflib
 import logging
+
+
+
+#  LAYOUT TERMINAL  (équivalents CSS)
+
+
+# « font-size » : nombre max de caractères par ligne avant wrap.
+# Plus la valeur est petite, plus le texte est « grand » (lisible).
+FONT_SIZE  = 72   # max chars par ligne (équivalent font-size conséquent)
+MARGIN_X   = 4   # marges gauche/droite (espaces)
+PADDING_X  = 2   # padding interne supplémentaire
+
+
+class MarginStdin:
+    """
+    Wrapper pour sys.stdin qui réinitialise le flag at_line_start du stdout
+    après chaque lecture de ligne (car l'appui sur Entrée par l'utilisateur
+    génère un retour à la ligne géré par le terminal).
+    """
+    def __init__(self, original_stdin, stdout_wrapper):
+        self.original_stdin = original_stdin
+        self.stdout_wrapper = stdout_wrapper
+
+    def readline(self, *args, **kwargs):
+        res = self.original_stdin.readline(*args, **kwargs)
+        self.stdout_wrapper.at_line_start = True
+        return res
+
+    def read(self, *args, **kwargs):
+        res = self.original_stdin.read(*args, **kwargs)
+        self.stdout_wrapper.at_line_start = True
+        return res
+
+    def __getattr__(self, name):
+        return getattr(self.original_stdin, name)
+
+
+class MarginStdout:
+    """
+    Wrapper pour sys.stdout qui applique automatiquement une marge (margin/padding)
+    à chaque début de ligne, sans modifier la logique d'affichage originale.
+    """
+    def __init__(self, original_stdout, margin=6):
+        import sys
+        self.original_stdout = original_stdout
+        self.margin_str = " " * margin
+        self.at_line_start = True
+        
+        # Envelopper sys.stdin pour réinitialiser at_line_start après une saisie
+        if not isinstance(sys.stdin, MarginStdin):
+            sys.stdin = MarginStdin(sys.stdin, self)
+
+    def write(self, string):
+        if not string:
+            return
+        
+        parts = string.split('\n')
+        for i, part in enumerate(parts):
+            if i > 0:
+                self.original_stdout.write('\n')
+                self.at_line_start = True
+            
+            if part:
+                if self.at_line_start:
+                    self.original_stdout.write(self.margin_str)
+                    self.at_line_start = False
+                self.original_stdout.write(part)
+
+    def flush(self):
+        self.original_stdout.flush()
+
+
+def get_term_width() -> int:
+    """Retourne la largeur réelle du terminal (fallback: 100)."""
+    try:
+        return os.get_terminal_size().columns
+    except OSError:
+        return 100
+
+
+def body_width() -> int:
+    """
+    Calcule la largeur utile du 'body' terminal :
+    min(FONT_SIZE, terminal_width - 2 × MARGIN_X).
+    """
+    return min(FONT_SIZE, get_term_width() - MARGIN_X * 2)
+
+
+def padded(text: str, extra: int = 0) -> str:
+    """
+    Applique MARGIN_X + extra espaces à gauche.
+    Simule padding-left / margin-left CSS.
+    """
+    return " " * (MARGIN_X + PADDING_X + extra) + text
+
+
+def centered(text: str) -> str:
+    """Centre le texte dans le terminal (margin: 0 auto)."""
+    # On retire les codes ANSI pour calculer la vraie longueur visible
+    import re
+    clean = re.sub(r"\033\[[0-9;]*m", "", text)
+    pad = max(0, (get_term_width() - len(clean)) // 2)
+    return " " * pad + text
+
+
+def wrap_lines(text: str, indent: int = 0) -> list[str]:
+    """
+    Découpe 'text' pour respecter body_width() puis indente chaque ligne.
+    Retourne une liste de lignes prêtes à l'affichage.
+    """
+    prefix = " " * (MARGIN_X + PADDING_X + indent)
+    width  = body_width() - indent
+    wrapped = textwrap.wrap(text, width=max(20, width))
+    return [prefix + line for line in wrapped] if wrapped else [prefix]
+
+
+def print_wrapped(text: str, indent: int = 0) -> None:
+    """Affiche un texte long avec wrap + margin automatiques."""
+    for line in wrap_lines(text, indent):
+        print(line)
+
+
+def divider(char: str = "─", color: str = "", reset: str = "\033[0m") -> str:
+    """
+    Génère un séparateur horizontal de la largeur du body.
+    Simule border-bottom / hr CSS.
+    """
+    line = char * body_width()
+    margin = " " * MARGIN_X
+    return f"{margin}{color}{line}{reset if color else ''}"
+
+
+def print_section(title: str, color: str = "", reset: str = "\033[0m") -> None:
+    """
+    Affiche un titre de section centré entre deux dividers.
+    Simule un <section> avec heading.
+    """
+    div = divider(color=color, reset=reset)
+    print(f"\n{div}")
+    print(centered(f"{color}{title}{reset}"))
+    print(f"{div}\n")
 
 logger = logging.getLogger("webmapper")
 

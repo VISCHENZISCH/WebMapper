@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding:utf-8
 """
-Module de détection XSS — refactorisé selon la nouvelle convention.
+Module de détection XSS - refactorisé selon la nouvelle convention.
 Expose : scan(url, session) -> list[dict]
 
 Logique :
@@ -91,7 +91,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
             except Exception as exc:
                 logger.debug("Erreur test XSS GET param '%s' sur %s : %s", param_name, url, exc)
 
-    # 2. Formulaires HTML — tester chaque champ individuellement
+    # 2. Formulaires HTML - tester chaque champ individuellement
     for form in soup.find_all("form"):
         action = form.get("action", "")
         method = (form.get("method", "GET")).upper()

@@ -9,6 +9,7 @@ import logging
 import argparse
 import web_scanner
 from reports.reporter import Reporter
+from utils import MarginStdout
 
 # Constantes de couleurs ANSI 256 / 24-bit TrueColor
 RESET   = "\033[0m"
@@ -27,12 +28,12 @@ MAGENTA  = "\033[38;5;201m"
 DARK_GREY = "\033[38;5;243m"
 WHITE    = "\033[37m"
 
-# Couleurs classiques
-RED    = "\033[91m"
-GREEN  = "\033[92m"
-YELLOW = "\033[93m"
-BLUE   = "\033[94m"
-CYAN   = "\033[96m"
+# Couleurs classiques (mappées sur la palette premium)
+RED    = CRIMSON
+GREEN  = EMERALD
+YELLOW = GOLD
+BLUE   = SKY_BLUE
+CYAN   = SKY_BLUE
 WHITE  = "\033[97m"
 DIM    = "\033[2m"
 
@@ -52,8 +53,22 @@ def show_banner() -> None:
 """
     print(banner)
     print("\t\t\t\t" + c(YELLOW, '© 2026 Félix TOVIGNAN'))
-    print("\t\t" + c(CYAN, 'https://github.com/VISCHENZISCH/WebMapper.git\n'))
-  
+    print("\t\t" + c(GREEN, 'https://github.com/VISCHENZISCH/WebMapper.git\n'))
+
+    # Usage & options
+    print(f"  {c(WHITE, 'usage:', bold=True)} {c(DARK_GREY, './webmapper.sh')} {c(SKY_BLUE, '[-h] [-t THREADS] [--proxy PROXY] [--no-rotate-ua] [-v]')} {c(GOLD, '[url]')}")
+    print()
+    print(f"  {c(WHITE, 'arguments :', bold=True)}")
+    print(f"    {c(GOLD, 'url')}                 URL cible {c(DARK_GREY, '(ex: http://example.com)')}")
+    print()
+    print(f"  {c(WHITE, 'options :', bold=True)}")
+    print(f"    {c(SKY_BLUE, '-t, --threads N')}    Threads parallèles  {c(DARK_GREY, '(défaut: 5)')}")
+    print(f"    {c(SKY_BLUE, '--proxy URL')}        Proxy HTTP          {c(DARK_GREY, '(ex: http://127.0.0.1:8080)')}")
+    print(f"    {c(SKY_BLUE, '--no-rotate-ua')}     Désactiver la rotation de User-Agent")
+    print(f"    {c(SKY_BLUE, '-v, --verbose')}      Mode verbose")
+    print()
+    print(f"  {c(WHITE, 'exemple :', bold=True)}")
+    print(f"    {c(DARK_GREY, '$')} {c(EMERALD, './webmapper.sh')} {c(GOLD, 'http://target.com')} {c(SKY_BLUE, '-t 10 --proxy http://127.0.0.1:8080 -v')}")
 
 
 def clear_terminal() -> None:
@@ -73,11 +88,11 @@ def ask_to_continue() -> bool:
 
 
 def print_report_paths(paths: dict) -> None:
-    print(f"\n{c(BLUE, '[+] Rapports générés :')}")
-    print(f"    {c(WHITE, 'HTML')}  : {c(CYAN, paths.get('html', '-'))}")
-    print(f"    {c(WHITE, 'JSON')}  : {c(CYAN, paths.get('json', '-'))}")
-    print(f"    {c(WHITE, 'CSV')}   : {c(CYAN, paths.get('csv',  '-'))}")
-    print(f"    {c(WHITE, 'SARIF')} : {c(CYAN, paths.get('sarif', '-'))}")
+    print(f"\n{c(BLUE, '[+] Rapports générés :')}\n")
+    print(f"\t   {c(GREEN, '-')} {c(WHITE, 'HTML')}  : {c(CYAN, paths.get('html', '-'))}")
+    print(f"\t   {c(GREEN, '-')} {c(WHITE, 'JSON')}  : {c(CYAN, paths.get('json', '-'))}")
+    print(f"\t   {c(GREEN, '-')} {c(WHITE, 'CSV')}   : {c(CYAN, paths.get('csv',  '-'))}")
+    print(f"\t   {c(GREEN, '-')} {c(WHITE, 'SARIF')} : {c(CYAN, paths.get('sarif', '-'))}")
 
 
 def print_config(args) -> None:
@@ -101,7 +116,7 @@ def print_menu() -> None:
         ("3", "Crawler uniquement", "MAP",  "Découverte de liens"),
         ("4", "Quitter",            "",     ""),
     ]
-    print(f"\n{c(YELLOW, '║  Utilisation réservée aux tests autorisés uniquement.')}\n")
+    print(f"\n{c(YELLOW, '║ Utilisation réservée aux tests autorisés uniquement.')}\n")
     sep = c(RED, "══════════════", bold=True)
     print(f"{c(BLUE, '[ ✔✘!?→ ]')} {sep} {c(GREEN, 'MENU DE SCAN', bold=True)} {sep} {c(BLUE, '[ ✔✘!?→ ]')}\n")
     for num, label, badge, desc in items:
@@ -168,9 +183,9 @@ def menu_loop(ws, url: str) -> int:
                 print(f"\n{c(BLUE, '[*] Crawling sur :')} {c(CYAN, url)}")
                 ws.crawl()
                 n = len(ws.link_list)
-                print(f"\n{c(GREEN, f'[*] Crawling terminé — {n} URL(s) découverte(s).')}")
+                print(f"\n{c(GREEN, f'[*] Crawling terminé - {n} URL(s) découverte(s).')}")
                 for lnk in ws.link_list:
-                    print(f"   {c(CYAN, lnk)}")
+                    print(f"{c(CYAN, lnk)}")
             except KeyboardInterrupt:
                 print(f"\n{c(YELLOW, '[!] Crawl interrompu.')}")
 
@@ -191,7 +206,7 @@ def menu_loop(ws, url: str) -> int:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="WebMapper — Scanner de vulnérabilités web",
+        description="WebMapper - Scanner de vulnérabilités web",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("url", nargs="?", help="URL cible (ex: http://example.com)")
@@ -205,14 +220,29 @@ def parse_args() -> argparse.Namespace:
 # Entrée 
 
 def main() -> None:
+    # Applique automatiquement la marge globale (margin/padding) à la console
+    sys.stdout = MarginStdout(sys.stdout, margin=6)
+    
     args = parse_args()
 
-    # Configuration du logging
+    # Configuration du logging sur stdout pour respecter la marge globale
     log_level = logging.DEBUG if args.verbose else logging.WARNING
-    logging.basicConfig(
-        level=log_level,
-        format="\033[2m%(name)s — %(message)s\033[0m",
-    )
+    
+    handler = logging.StreamHandler(sys.stdout)
+    
+    class CustomFormatter(logging.Formatter):
+        def format(self, record):
+            # Supprime "urllib3.connectionpool - " et conserve l'alignement sur la marge globale
+            if record.name.startswith("urllib3"):
+                return f"\033[2m{record.getMessage()}\033[0m"
+            return f"\033[2m{record.name} - {record.getMessage()}\033[0m"
+            
+    handler.setFormatter(CustomFormatter())
+    
+    root_logger = logging.getLogger()
+    root_logger.setLevel(log_level)
+    root_logger.handlers = []
+    root_logger.addHandler(handler)
 
     show_banner()
 

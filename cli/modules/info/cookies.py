@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding:utf-8
 """
-Module d'audit de sécurité des cookies — refactorisé selon la nouvelle convention.
+Module d'audit de sécurité des cookies - refactorisé selon la nouvelle convention.
 Expose : scan(url, session) -> list[dict]
 """
 import re
@@ -110,7 +110,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                 "type": "COOKIE_MISSING_SECURE_FLAG",
                 "severity": "high" if is_sensitive else "medium",
                 "url": url,
-                "detail": f"Cookie '{name}' sans flag Secure — transmis en clair sur HTTP.",
+                "detail": f"Cookie '{name}' sans flag Secure - transmis en clair sur HTTP.",
                 "evidence": base_evidence,
             })
 
@@ -119,7 +119,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                 "type": "COOKIE_MISSING_HTTPONLY_FLAG",
                 "severity": "high" if is_sensitive else "medium",
                 "url": url,
-                "detail": f"Cookie '{name}' sans flag HttpOnly — accessible via JavaScript (risque XSS).",
+                "detail": f"Cookie '{name}' sans flag HttpOnly - accessible via JavaScript (risque XSS).",
                 "evidence": base_evidence,
             })
 
@@ -128,7 +128,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                 "type": "COOKIE_MISSING_SAMESITE_FLAG",
                 "severity": "medium",
                 "url": url,
-                "detail": f"Cookie '{name}' sans flag SameSite — vulnérable aux attaques CSRF.",
+                "detail": f"Cookie '{name}' sans flag SameSite - vulnérable aux attaques CSRF.",
                 "evidence": base_evidence,
             })
         elif samesite.lower() == "none" and not secure:

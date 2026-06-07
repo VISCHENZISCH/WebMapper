@@ -23,6 +23,19 @@ from concurrent.futures import ThreadPoolExecutor
 import random
 from utils import USER_AGENTS
 
+# Constantes de couleurs premium ANSI
+RESET      = "\033[0m"
+BOLD       = "\033[1m"
+DIM        = "\033[2m"
+SKY_BLUE   = "\033[38;5;39m"
+EMERALD    = "\033[38;5;46m"
+GOLD       = "\033[38;5;220m"
+CRIMSON    = "\033[38;5;196m"
+PURPLE     = "\033[38;5;141m"
+MAGENTA    = "\033[38;5;201m"
+DARK_GREY  = "\033[38;5;243m"
+WHITE      = "\033[97m"
+
 
 class WebScanner:
     def __init__(
@@ -39,11 +52,14 @@ class WebScanner:
         self.max_threads = max_threads
         self.rotate_ua = rotate_ua
 
-        # Session HTTP partagée entre tous les modules
+        # Session HTTP partagée (fallback)
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": self.user_agent})
         if self.proxy:
             self.session.proxies.update(self.proxy)
+
+        # Thread-local storage pour les sessions HTTP de chaque worker thread
+        self.thread_local = threading.local()
 
         self.stopped      = False
         self.link_list    = [self.url]   # URLs découvertes
@@ -55,7 +71,7 @@ class WebScanner:
 
         # Chargement dynamique des modules
         self._modules = self._load_modules()
-        print(f"\033[92m[+] {len(self._modules)} module(s) chargé(s)")
+        print(f"{EMERALD}[+] {len(self._modules)} module(s) chargé(s){RESET}")
 
     # Chargement dynamique des modules
 
@@ -69,7 +85,7 @@ class WebScanner:
         modules_dir = os.path.join(os.path.dirname(__file__), "modules")
 
         if not os.path.isdir(modules_dir):
-            print("\033[91m[!] Répertoire modules/ introuvable.\033[0m")
+            print(f"{CRIMSON}[!] Répertoire modules/ introuvable.{RESET}")
             return modules
 
         for root, dirs, files in os.walk(modules_dir):
@@ -89,9 +105,9 @@ class WebScanner:
                     if callable(getattr(mod, "scan", None)):
                         modules.append(mod)
                     else:
-                        print(f"\033[93m[!] Module {module_name} ignoré (pas de fonction scan()).\033[0m")
+                        print(f"{GOLD}[!] Module {module_name} ignoré (pas de fonction scan()).{RESET}")
                 except Exception as exc:
-                    print(f"\033[91m[!] Erreur chargement {module_name} : {exc}\033[0m")
+                    print(f"{CRIMSON}[!] Erreur chargement {module_name} : {exc}{RESET}")
 
         return modules
 
@@ -104,7 +120,7 @@ class WebScanner:
             res = self.session.get(page, timeout=10)
             return res.text
         except Exception as exc:
-            print(f"\033[91m[!] Erreur récupération {page} : {exc}\033[0m")
+            print(f"{CRIMSON}[!] Erreur récupération {page} : {exc}{RESET}")
             return None
 
     def get_page_links(self, page: str | None = None) -> list[str]:
@@ -164,9 +180,9 @@ class WebScanner:
                         visited.add(clean)
                         self.link_list.append(link)
                         queue.append(link)
-                        print(f"\033[94m[+] Lien :\033[0m \033[96m{link}\033[0m")
+                        print(f"  {SKY_BLUE}[+] {RESET}Lien découvert : {WHITE}{link}{RESET}")
         except KeyboardInterrupt:
-            print("\n\033[93m[!] Crawl interrompu.\033[0m")
+            print(f"\n{GOLD}[!] Crawl interrompu.{RESET}")
             sys.exit(0)
 
     
@@ -174,30 +190,30 @@ class WebScanner:
    
     def _run_modules_on(self, url: str):
         """Exécute tous les modules chargés sur une URL et agrège les findings."""
+        # Initialise la session du thread s'il n'existe pas encore (Keep-Alive / connexion persistante)
+        if not hasattr(self.thread_local, "session"):
+            session = requests.Session()
+            if self.proxy:
+                session.proxies.update(self.proxy)
+            self.thread_local.session = session
+        else:
+            session = self.thread_local.session
+
         for mod in self._modules:
             if self.stopped:
                 break
             mod_name = mod.__name__.split(".")[-1]
             try:
-                # Chaque thread utilise sa propre session pour éviter les conflits d'état de requêtes simultanées
-                # mais hérite de la configuration globale.
-                thread_session = requests.Session()
-                
-                # Rotation de User-Agent et en-têtes réalistes pour éviter les détections WAF simples
+                # Rotation de User-Agent et en-têtes réalistes par URL
                 ua = random.choice(USER_AGENTS) if self.rotate_ua else self.user_agent
-                thread_session.headers.update({
+                session.headers.update({
                     "User-Agent": ua,
                     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
                     "Accept-Language": "fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3",
                     "Referer": url,
                 })
-                
-                if self.proxy:
-                    thread_session.proxies.update(self.proxy)
 
-
-
-                results = mod.scan(url, thread_session)
+                results = mod.scan(url, session)
                 if results:
                     with self.findings_lock:
                         self.findings.extend(results)
@@ -205,37 +221,41 @@ class WebScanner:
                         for f in results:
                             sev   = f.get("severity", "info").upper()
                             ftype = f.get("type", "?")
-                            color = {
-                                "CRITICAL": "\033[91m",
-                                "HIGH":     "\033[91m",
-                                "MEDIUM":   "\033[93m",
-                                "LOW":      "\033[96m",
-                                "INFO":     "\033[97m",
-                            }.get(sev, "\033[97m")
-                            print(f"  {color}[{sev}] {ftype}\033[0m — {f.get('detail','')[:120]}")
+                            
+                            color, label = {
+                                "CRITICAL": (CRIMSON, "[CRITICAL]"),
+                                "HIGH":     (CRIMSON, "[HIGH]    "),
+                                "MEDIUM":   (GOLD,    "[MEDIUM]  "),
+                                "LOW":      (SKY_BLUE, "[LOW]     "),
+                                "INFO":     (WHITE,    "[INFO]    "),
+                            }.get(sev, (WHITE, "[INFO]    "))
+                            
+                            detail = f.get('detail', '')
+                            if len(detail) > 95:
+                                detail = detail[:92] + "..."
+                            print(f"{color}{label} {ftype:<30} {RESET}- {detail}")
             except Exception as exc:
                 with self.print_lock:
-                    print(f"\033[91m  [!] Erreur dans le module {mod_name} sur {url} : {exc}\033[0m")
+                    print(f"{CRIMSON}[!] Erreur module {mod_name} sur {url} : {exc}{RESET}")
 
     def run_full_scan(self):
         """Crawl + scan de vulnérabilités sur toutes les URLs découvertes."""
-        print(f"\n\033[94m[*] Début du scan complet sur : \033[96m{self.url}\033[0m")
+        print(f"\n{BOLD}{SKY_BLUE}[*] Début du scan complet sur : {WHITE}{self.url}{RESET}")
         self.crawl()
-        print(f"\n\033[94m[*] {len(self.link_list)} URL(s) à analyser.\033[0m\n")
+        print(f"\n{BOLD}{SKY_BLUE}[*] {len(self.link_list)} URL(s) à analyser.{RESET}\n")
         self._scan_link_list()
 
     def run_vuln_scan(self):
         """Scan de vulnérabilités uniquement sur l'URL cible (sans crawl)."""
-        print(f"\n\033[94m[*] Analyse directe sur : \033[96m{self.url}\033[0m")
+        print(f"\n{BOLD}{SKY_BLUE}[*]   Analyse directe sur : {WHITE}{self.url}{RESET}")
         self.link_list = [self.url]
         self._scan_link_list()
 
     def _scan_link_list(self):
         """Exécute les modules sur toutes les URLs dans link_list en parallèle."""
-        _header = "+" + " - " * 25
-        print("\n\033[94m" + _header)
-        print("\t\t\t[*] Lancement de la recherche de vulnérabilités...")
-        print(_header + "\033[0m\n")
+        with self.print_lock:
+            print(f"[*] {'Lancement de la recherche de vulnérabilités...'.center(50)}\n")
+         
 
         total_urls = len(self.link_list)
         completed_count = 0
@@ -246,19 +266,19 @@ class WebScanner:
             if self.stopped:
                 return
             with self.print_lock:
-                print(f"\033[94m[*] Analyse de :\033[0m \033[96m{link}\033[0m")
+                print(f"{SKY_BLUE}[*]{RESET} Analyse de : {BOLD}{WHITE}{link}{RESET}")
             
             try:
                 self._run_modules_on(link)
             except Exception as exc:
                 with self.print_lock:
-                    print(f"\033[91m[!] Erreur lors du traitement de {link} : {exc}\033[0m")
+                    print(f"{CRIMSON}[!] Erreur traitement {link} : {exc}{RESET}")
 
             with counter_lock:
                 completed_count += 1
                 current = completed_count
             with self.print_lock:
-                print(f"\033[92m[+] [{current}/{total_urls}]\033[0m Terminé : \033[96m{link}\033[0m\n")
+                print(f"{EMERALD}[+] [{current}/{total_urls}]{RESET} Terminé : {DARK_GREY}{link}{RESET}\n")
 
         try:
             with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
@@ -267,5 +287,5 @@ class WebScanner:
                     future.result()
         except KeyboardInterrupt:
             with self.print_lock:
-                print("\n\033[93m[!] Scan interrompu.\033[0m")
+                print(f"\n{GOLD}[!] Scan interrompu.{RESET}")
             self.stopped = True

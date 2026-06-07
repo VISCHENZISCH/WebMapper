@@ -58,7 +58,7 @@ def _check_baseline_stability(session, url, timeout) -> tuple[str, bool]:
         similarity = calculate_similarity(res1.text, res2.text)
         is_stable = similarity > 0.95
         if not is_stable:
-            logger.debug("Page instable (%s) — similarité naturelle: %.2f. Boolean-blind peu fiable.", url, similarity)
+            logger.debug("Page instable (%s) - similarité naturelle: %.2f. Boolean-blind peu fiable.", url, similarity)
         return res1.text, is_stable
     except Exception:
         return "", False
@@ -143,7 +143,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                 except Exception as exc:
                     logger.debug("Erreur test SQLi blind param '%s' : %s", param_name, exc)
 
-    # 3. Formulaires HTML — helper partagé
+    # 3. Formulaires HTML - helper partagé
     for form in soup.find_all("form"):
         action = form.get("action", "")
         method = (form.get("method", "GET")).upper()
