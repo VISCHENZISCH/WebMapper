@@ -47,7 +47,7 @@ TCP_TIMEOUT: Final[float] = 2.0
 DEFAULT_WORKERS: Final[int] = 50
 
 # Chemin vers nmap.json
-NMAP_JSON_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "rules", "nmap.json")
+NMAP_JSON_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "rules", "nmap.json")
 
 # Mapping port → service connu (fallback si nmap non dispo)
 KNOWN_SERVICES: Final[dict[int, str]] = {
@@ -72,7 +72,7 @@ KNOWN_SERVICES: Final[dict[int, str]] = {
 
 #Modèle de résultat
 
-@dataclass(slots=True, frozen=True)
+@dataclass(slots=True)
 class PortResult:
     """Résultat immuable d'un scan de port.
 
@@ -212,7 +212,18 @@ class PortScanner:
             return ["-sV --version-intensity 5 -T4"]
 
         if self._nmap_profile == "deep":
-            args_list = ["-sS -sV -O -A -T4 --min-rate 300"]
+            is_root = False
+            try:
+                is_root = os.geteuid() == 0
+            except AttributeError:
+                pass # Windows ou autre système
+                
+            if is_root:
+                args_list = ["-sS -sV -O -A -T4 --min-rate 300"]
+            else:
+                args_list = ["-sT -sV -T4 --min-rate 300"]
+                logger.warning("Privilèges root (sudo) manquants ! Remplacement par -sT (scan plus lent et moins discret).")
+
             if os.path.exists(NMAP_JSON_PATH):
                 try:
                     with open(NMAP_JSON_PATH, "r", encoding="utf-8") as f:
@@ -222,7 +233,7 @@ class PortScanner:
                             cmd = prof.get("command", "")
                             cmd = cmd.replace("nmap", "").replace("{target}", "").replace("-p {ports}", "").replace("--top-ports {count}", "").strip()
                             if cmd:
-                                logger.info("Profil nmap profond ajouté : %s", prof.get("name"))
+                                logger.debug("Profil nmap profond ajouté : %s", prof.get("name"))
                                 args_list.append(cmd)
                 except Exception as e:
                     logger.error("Erreur lecture nmap.json : %s", e)
