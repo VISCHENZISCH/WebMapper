@@ -1,3 +1,14 @@
+<div align="center">
+<pre style="font-family: monospace; text-align: left; display: inline-block; background-color: #0d1117; padding: 20px; border-radius: 8px; line-height: 1.2;">
+<span style="color: #d700d7; font-weight: bold;">  __      __      ___. _____                                           </span>
+<span style="color: #d700d7; font-weight: bold;">  \ \    /  \ ____\_ |__/     \ _____  ______ ______   ___________  </span>
+<span style="color: #af5fff; font-weight: bold;">   \ \/\/   // __ \| __ \  \ /  \\__  \ \____ \\____ \_/ __ \_  __ \ </span>
+<span style="color: #af5fff; font-weight: bold;">    \        /\  ___/| \_\ \   Y  / / __ \|  |_> >  |_> >\  ___/|  | \/  </span>
+<span style="color: #00afff; font-weight: bold;">     \__/\  /  \___  >___  /__|_|  /(____  /   __/|   __/  \___  >__|    </span>
+<span style="color: #00afff; font-weight: bold;">          \/       \/    \/      \/      \/|__|   |__|         \/       </span>
+</pre>
+</div>
+
 # WebMapper v2.0
 
 **WebMapper** est un outil d'audit de sécurité web modulaire, multi-threadé et extensible. Il permet de détecter automatiquement les vulnérabilités courantes sur des applications web et de générer des rapports détaillés aux formats HTML, JSON, CSV et SARIF.
@@ -73,21 +84,29 @@ Pour récupérer la dernière version :
 ### Options CLI
 ```bash
 # Linux
-usage: ./webmapper.sh [-h] [-t THREADS] [--proxy PROXY] [--no-rotate-ua] [-v] [url]
+usage: ./webmapper.sh [-h] [-t THREADS] [--proxy PROXY] [--no-rotate-ua] [--wordlist FILE] [--ports PORTS] [--nuclei-args ARGS] [--update] [-v] [url]
 
 # Windows
-usage: .\webmapper.bat [-h] [-t THREADS] [--proxy PROXY] [--no-rotate-ua] [-v] [url]
+usage: .\webmapper.bat [-h] [-t THREADS] [--proxy PROXY] [--no-rotate-ua] [--wordlist FILE] [--ports PORTS] [--nuclei-args ARGS] [--update] [-v] [url]
 ```
 
-```
+```text
 positional arguments:
   url                   URL cible (ex: http://example.com)
 
-options:
+options de scan:
   -t, --threads N       Nombre de threads parallèles (défaut: 5)
   --proxy URL           Proxy HTTP (ex: http://127.0.0.1:8080)
   --no-rotate-ua        Désactiver la rotation de User-Agent
   -v, --verbose         Mode verbose (affiche les logs de debug)
+
+options de modules:
+  --wordlist FILE       Chemin vers une wordlist custom pour l'énumération DNS
+  --ports PORTS         Ports spécifiques à scanner (ex: '80,443' ou 'top100')
+  --nuclei-args ARGS    Arguments supplémentaires à passer à Nuclei (ex: '-tags cve')
+
+maintenance:
+  --update              Met à jour WebMapper
 ```
 
 
