@@ -352,7 +352,7 @@ def main() -> None:
             
             if "Exécution Nmap :" in msg:
                 parts = msg.split("Exécution Nmap :")
-                return f"\n{C_TIME}{time_str}{RESET}  {C_MOD}{mod_aligned}{RESET}  \033[90mExécution Nmap :\033[0m \033[97m\033[1m{parts[1].strip()}\033[0m\n"
+                return f"{C_TIME}{time_str}{RESET}  {C_MOD}{mod_aligned}{RESET}  \033[90mExécution Nmap :\033[0m \033[97m\033[1m{parts[1].strip()}\033[0m"
 
             if " → " in msg:
                 parts = msg.split(" → ", 1)

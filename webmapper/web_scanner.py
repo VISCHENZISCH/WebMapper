@@ -322,6 +322,9 @@ class WebScanner:
             if not ports:
                 print(f"  {DARK_GREY}[i] Aucun port ouvert trouvé sur {ip}{RESET}")
             else:
+                if ps.os_match:
+                    print(f"\n  {MAGENTA}[*] OS Détecté sur {ip} : {WHITE}{ps.os_match}{RESET}")
+                
                 for p in ports:
                     print(f"  {EMERALD}[+] {RESET}Port ouvert sur {WHITE}{ip}{RESET} : {EMERALD}{p.port}/tcp{RESET} ({p.service} {p.version})")
                     if p.banner:
@@ -332,12 +335,12 @@ class WebScanner:
                             color = CRIMSON if is_vuln else DARK_GREY
                             # Nettoyer les sauts de ligne pour un affichage compact
                             display_chunk = chunk.replace('\n', ' ')
-                            if len(display_chunk) > 300:
-                                display_chunk = display_chunk[:297] + "..."
+                            if len(display_chunk) > 1000:
+                                display_chunk = display_chunk[:997] + "..."
                             
                             import textwrap
                             # On coupe intelligemment avec une indentation pour les lignes suivantes
-                            wrapped = textwrap.fill(display_chunk, width=90, subsequent_indent="          ")
+                            wrapped = textwrap.fill(display_chunk, width=100, subsequent_indent="          ")
                             print(f"      {color}↳ {wrapped}{RESET}")
                     # Ajouter un finding pour chaque sous-domaine partageant cette IP
                     for sub in ip_to_subs[ip]:

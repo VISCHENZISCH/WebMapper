@@ -169,7 +169,7 @@ class PortScanner:
         timeout:      Timeout TCP par port (défaut: 2s).
         nmap_profile: Profil de scan issu de nmap.json (défaut: "default").
     """
-    __slots__ = ("_target", "_ports", "_workers", "_timeout", "_nmap_profile")
+    __slots__ = ("_target", "_ports", "_workers", "_timeout", "_nmap_profile", "os_match")
 
     def __init__(
         self,
@@ -184,6 +184,7 @@ class PortScanner:
         self._workers = workers
         self._timeout = timeout
         self._nmap_profile = nmap_profile
+        self.os_match = ""
 
     @property
     def target(self) -> str:
@@ -237,7 +238,10 @@ class PortScanner:
                                 args_list.append(cmd)
                 except Exception as e:
                     logger.error("Erreur lecture nmap.json : %s", e)
-            return args_list
+            
+            # WAF Evasion : Forcer un User-Agent légitime pour toutes les requêtes HTTP des scripts nmap
+            waf_evasion = ' --script-args http.useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"'
+            return [arg + waf_evasion for arg in args_list]
 
         # Si un profil spécifique est demandé
         if os.path.exists(NMAP_JSON_PATH):
@@ -268,7 +272,8 @@ class PortScanner:
 
         for nmap_args in nmap_args_list:
             display_ports = ports_str if len(ports_str) < 30 else f"{len(self._ports)} ports"
-            logger.info("Exécution Nmap : nmap -p %s %s %s", display_ports, nmap_args, self._target)
+            display_args = nmap_args.replace(' --script-args http.useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"', '')
+            logger.info("Exécution Nmap : nmap -p %s %s %s", display_ports, display_args, self._target)
             try:
                 nm.scan(
                     hosts=self._target,
@@ -294,8 +299,12 @@ class PortScanner:
                     logger.debug("Aucun résultat nmap sur cette passe pour %s", self._target)
                     continue
 
-            # Fusionner les résultats
+            # Fusionner les résultats et récupérer l'OS
             if host in nm.all_hosts():
+                if not self.os_match and "osmatch" in nm[host] and nm[host]["osmatch"]:
+                    best_os = nm[host]["osmatch"][0]
+                    self.os_match = f"{best_os.get('name', 'Unknown')} (Confiance: {best_os.get('accuracy', '0')}%)"
+
                 for proto in nm[host].all_protocols():
                     for port in sorted(nm[host][proto].keys()):
                         port_info = nm[host][proto][port]
