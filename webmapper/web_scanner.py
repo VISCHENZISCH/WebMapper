@@ -324,6 +324,21 @@ class WebScanner:
             else:
                 for p in ports:
                     print(f"  {EMERALD}[+] {RESET}Port ouvert sur {WHITE}{ip}{RESET} : {EMERALD}{p.port}/tcp{RESET} ({p.service} {p.version})")
+                    if p.banner:
+                        # Affichage du contenu des scripts Nmap / Bannières dans la console
+                        chunks = [c.strip() for c in p.banner.split(" | ") if c.strip()]
+                        for chunk in chunks:
+                            is_vuln = any(kw in chunk.upper() for kw in ["VULNERABLE", "CVE-", "EXPLOIT", "ERROR"])
+                            color = CRIMSON if is_vuln else DARK_GREY
+                            # Nettoyer les sauts de ligne pour un affichage compact
+                            display_chunk = chunk.replace('\n', ' ')
+                            if len(display_chunk) > 300:
+                                display_chunk = display_chunk[:297] + "..."
+                            
+                            import textwrap
+                            # On coupe intelligemment avec une indentation pour les lignes suivantes
+                            wrapped = textwrap.fill(display_chunk, width=90, subsequent_indent="          ")
+                            print(f"      {color}↳ {wrapped}{RESET}")
                     # Ajouter un finding pour chaque sous-domaine partageant cette IP
                     for sub in ip_to_subs[ip]:
                         self.aggregator.add_findings([{
@@ -387,7 +402,7 @@ class WebScanner:
     def run_ports_only(self):
         """Exécute uniquement le scan de ports sur la cible."""
         print(f"\n{BOLD}{SKY_BLUE}[*] Début du scan de ports sur : {WHITE}{self.url}{RESET}")
-        self._run_port_scan()
+        self._run_port_scan(deep_scan=True)
 
     def run_nuclei_only(self):
         """Exécute uniquement Nuclei sur l'URL cible (sans crawl)."""

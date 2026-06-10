@@ -234,6 +234,8 @@ def generate(data: dict, filepath: str):
             color: var(--ink);
             vertical-align: middle;
             border-bottom: 1px solid #e2e8f0;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }}
         tr {{
             transition: background 0.15s;
