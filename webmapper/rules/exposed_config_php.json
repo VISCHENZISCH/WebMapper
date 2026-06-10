@@ -1,0 +1,90 @@
+{
+  "name": "exposed_config_backup",
+  "type": "EXPOSED_CONFIG_BACKUP",
+  "severity": "critical",
+  "detail": "Fichier de configuration source (ou backup) exposé à l'adresse : {url}. Il contient le code source PHP en texte clair, y compris les potentiels identifiants de base de données.",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/config.php.bak",
+      "matchers": [
+        {
+          "type": "status",
+          "status": 200
+        },
+        {
+          "type": "regex",
+          "part": "body",
+          "condition": "or",
+          "regex": [
+            "<\\?php",
+            "DB_USER",
+            "DB_PASSWORD"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/config.php.old",
+      "matchers": [
+        {
+          "type": "status",
+          "status": 200
+        },
+        {
+          "type": "regex",
+          "part": "body",
+          "condition": "or",
+          "regex": [
+            "<\\?php",
+            "DB_USER",
+            "DB_PASSWORD"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/wp-config.php.bak",
+      "matchers": [
+        {
+          "type": "status",
+          "status": 200
+        },
+        {
+          "type": "regex",
+          "part": "body",
+          "condition": "or",
+          "regex": [
+            "<\\?php",
+            "DB_USER",
+            "DB_PASSWORD",
+            "WP_DEBUG"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/wp-config.php.old",
+      "matchers": [
+        {
+          "type": "status",
+          "status": 200
+        },
+        {
+          "type": "regex",
+          "part": "body",
+          "condition": "or",
+          "regex": [
+            "<\\?php",
+            "DB_USER",
+            "DB_PASSWORD",
+            "WP_DEBUG"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "name": "exposed_ssh_keys",
+  "type": "EXPOSED_SSH_KEYS",
+  "severity": "critical",
+  "detail": "Clé privée SSH exposée à l'adresse : {url}. Cela peut permettre de compromettre l'accès au serveur ou à l'infrastructure.",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/.ssh/id_rsa",
+      "matchers": [
+        {
+          "type": "status",
+          "status": 200
+        },
+        {
+          "type": "regex",
+          "part": "body",
+          "condition": "or",
+          "regex": [
+            "-----BEGIN OPENSSH PRIVATE KEY-----",
+            "-----BEGIN RSA PRIVATE KEY-----"
+          ]
+        }
+      ]
+    }
+  ]
+}

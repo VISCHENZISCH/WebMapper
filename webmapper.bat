@@ -1,11 +1,14 @@
 @echo off
-chcp 65001 > nul
+:: webmapper.bat
+cd /d "%~dp0"
 
-if not exist "venv" (
-    echo [!] Environnement virtuel non détecté. Veuillez lancer install.bat d'abord.
+IF NOT EXIST "venv" (
+    color 0C
+    echo [!] Environnement virtuel non detecte. 
+    echo [*] Veuillez lancer webmapper\scripts\install.bat au prealable.
     pause
     exit /b 1
 )
 
-call venv\Scripts\activate
-python cli\main.py %*
+call venv\Scripts\activate.bat
+python webmapper\main.py %*

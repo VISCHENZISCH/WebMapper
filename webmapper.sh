@@ -1,12 +1,13 @@
 #!/bin/bash
+# webmapper.sh
 
+cd "$(dirname "$0")" || exit
 
-# Vérifier si venv existe
 if [ ! -d "venv" ]; then
-    echo "[!] Environnement virtuel non détecté. Veuillez lancer ./install.sh d'abord."
+    echo -e "\033[38;5;196m[!] Environnement virtuel non détecté.\033[0m"
+    echo -e "\033[38;5;220m[*] Veuillez lancer ./webmapper/scripts/install.sh au préalable.\033[0m"
     exit 1
 fi
 
-# Activer venv et lancer le script principal
 source venv/bin/activate
-python3 cli/main.py "$@"
+python3 webmapper/main.py "$@"

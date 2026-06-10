@@ -1,0 +1,50 @@
+{
+  "name": "exposed_sql_backup",
+  "type": "EXPOSED_SQL_BACKUP",
+  "severity": "critical",
+  "detail": "Fichier de sauvegarde de base de données SQL accessible publiquement à l'adresse : {url}. Cela permet de voler l'intégralité des données.",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/backup.sql",
+      "matchers": [
+        {
+          "type": "status",
+          "status": 200
+        },
+        {
+          "type": "regex",
+          "part": "body",
+          "condition": "or",
+          "regex": [
+            "INSERT INTO",
+            "CREATE TABLE",
+            "DROP TABLE",
+            "-- MySQL dump"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/dump.sql",
+      "matchers": [
+        {
+          "type": "status",
+          "status": 200
+        },
+        {
+          "type": "regex",
+          "part": "body",
+          "condition": "or",
+          "regex": [
+            "INSERT INTO",
+            "CREATE TABLE",
+            "DROP TABLE",
+            "-- MySQL dump"
+          ]
+        }
+      ]
+    }
+  ]
+}

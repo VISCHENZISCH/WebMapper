@@ -1,0 +1,68 @@
+{
+  "name": "exposed_docker_config",
+  "type": "EXPOSED_DOCKER_CONFIG",
+  "severity": "high",
+  "detail": "Fichier de configuration Docker exposé à l'adresse : {url}. Ce fichier peut contenir des variables d'environnement, des volumes montés, et exposer l'architecture interne.",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/docker-compose.yml",
+      "matchers": [
+        {
+          "type": "status",
+          "status": 200
+        },
+        {
+          "type": "regex",
+          "part": "body",
+          "condition": "or",
+          "regex": [
+            "^version:",
+            "^services:",
+            "image:"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/docker-compose.yaml",
+      "matchers": [
+        {
+          "type": "status",
+          "status": 200
+        },
+        {
+          "type": "regex",
+          "part": "body",
+          "condition": "or",
+          "regex": [
+            "^version:",
+            "^services:",
+            "image:"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/Dockerfile",
+      "matchers": [
+        {
+          "type": "status",
+          "status": 200
+        },
+        {
+          "type": "regex",
+          "part": "body",
+          "condition": "or",
+          "regex": [
+            "^FROM ",
+            "^RUN ",
+            "^CMD "
+          ]
+        }
+      ]
+    }
+  ]
+}

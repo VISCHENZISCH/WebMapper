@@ -1,0 +1,130 @@
+{
+  "categories": {
+    "scans_basiques": [
+      {
+        "name": "Scan basique d'une cible",
+        "command": "nmap {target}"
+      },
+      {
+        "name": "Ping scan (détection d'hôtes actifs)",
+        "command": "nmap -sn {target}"
+      },
+      {
+        "name": "Désactiver la découverte d'hôtes (utile si ping bloqué)",
+        "command": "nmap -Pn {target}"
+      }
+    ],
+    "scans_de_ports": [
+      {
+        "name": "Scanner des ports spécifiques",
+        "command": "nmap -p {ports} {target}"
+      },
+      {
+        "name": "Scanner tous les ports",
+        "command": "nmap -p- {target}"
+      },
+      {
+        "name": "Scanner les ports les plus courants",
+        "command": "nmap --top-ports {count} {target}"
+      }
+    ],
+    "detection_services_os": [
+      {
+        "name": "Détecter la version des services",
+        "command": "nmap -sV {target}"
+      },
+      {
+        "name": "Détecter le système d'exploitation",
+        "command": "nmap -O {target}"
+      },
+      {
+        "name": "Scan agressif (OS + services + traceroute)",
+        "command": "nmap -A {target}"
+      }
+    ],
+    "scans_avances": [
+      {
+        "name": "Scan SYN (furtif)",
+        "command": "nmap -sS {target}"
+      },
+      {
+        "name": "Scan UDP",
+        "command": "nmap -sU {target}"
+      }
+    ],
+    "timing_performance": [
+      {
+        "name": "Scan rapide",
+        "command": "nmap -T4 {target}"
+      },
+      {
+        "name": "Scan très discret",
+        "command": "nmap -T0 {target}"
+      }
+    ],
+    "scripts_nse_web": [
+      {
+        "name": "Lancer tous les scripts HTTP",
+        "command": "nmap --script=http-* {target}"
+      },
+      {
+        "name": "Détecter les injections SQL",
+        "command": "nmap --script http-sql-injection {target}"
+      },
+      {
+        "name": "Détecter les vulnérabilités XSS stockées",
+        "command": "nmap --script http-stored-xss {target}"
+      },
+      {
+        "name": "Vérifier la vulnérabilité Shellshock",
+        "command": "nmap --script http-shellshock {target}"
+      },
+      {
+        "name": "Détecter les pare-feux applicatifs (WAF)",
+        "command": "nmap --script http-waf-detect {target}"
+      },
+      {
+        "name": "Énumérer les répertoires utilisateurs HTTP",
+        "command": "nmap --script http-userdir-enum {target}"
+      }
+    ],
+    "scripts_nse_ssl_tls": [
+      {
+        "name": "Lister les suites de chiffrement SSL/TLS",
+        "command": "nmap --script ssl-enum-ciphers {target}"
+      },
+      {
+        "name": "Tester la vulnérabilité Heartbleed",
+        "command": "nmap --script ssl-heartbleed {target}"
+      }
+    ],
+    "scripts_nse_smb": [
+      {
+        "name": "Vérifier la vulnérabilité SMB MS08-067",
+        "command": "nmap --script smb-vuln-ms08-067 {target}"
+      },
+      {
+        "name": "Lister les ressources partagées SMB",
+        "command": "nmap --script smb-enum-shares {target}"
+      }
+    ],
+    "scripts_nse_ftp": [
+      {
+        "name": "Vérifier la connexion FTP anonyme",
+        "command": "nmap --script ftp-anon {target}"
+      }
+    ],
+    "scripts_nse_dns": [
+      {
+        "name": "Tester les vulnérabilités de transfert de zone DNS",
+        "command": "nmap --script dns-zone-transfer {target}"
+      }
+    ],
+    "scripts_nse_vulnerabilites": [
+      {
+        "name": "Lancer les scripts de détection de vulnérabilités générales",
+        "command": "nmap --script vuln {target}"
+      }
+    ]
+  }
+}

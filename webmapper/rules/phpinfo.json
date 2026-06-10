@@ -1,0 +1,46 @@
+{
+  "name": "phpinfo_exposure",
+  "type": "PHPINFO_EXPOSURE",
+  "severity": "low",
+  "detail": "Page phpinfo() exposée à l'adresse : {url}. Cela divulgue des informations de configuration internes du serveur web.",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/phpinfo.php",
+      "matchers": [
+        {
+          "type": "status",
+          "status": 200
+        },
+        {
+          "type": "regex",
+          "part": "body",
+          "condition": "and",
+          "regex": [
+            "<title>phpinfo\\(\\)</title>",
+            "PHP Version"
+          ]
+        }
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/info.php",
+      "matchers": [
+        {
+          "type": "status",
+          "status": 200
+        },
+        {
+          "type": "regex",
+          "part": "body",
+          "condition": "and",
+          "regex": [
+            "<title>phpinfo\\(\\)</title>",
+            "PHP Version"
+          ]
+        }
+      ]
+    }
+  ]
+}
