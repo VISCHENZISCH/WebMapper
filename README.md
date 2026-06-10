@@ -45,6 +45,13 @@ chmod +x install.sh
 .\install.bat
 ```
 
+### Mettre à jour WebMapper
+Pour récupérer la dernière version :
+```bash
+./webmapper.sh --update
+```
+*Note : Le programme vous proposera également de vérifier les mises à jour lorsque vous quittez le menu interactif (Option 7).*
+
 ---
 
 ## Utilisation

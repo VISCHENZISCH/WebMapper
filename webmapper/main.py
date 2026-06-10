@@ -236,7 +236,21 @@ def menu_loop(ws, url: str) -> int:
                 break
 
         elif choice == "7":
-            print(c(GREEN, "[*] Merci d'avoir utilisé WebMapper. À bientôt !"))
+            ans = input(f"\n{c(BLUE, '[?]')} {c(WHITE, 'Voulez-vous vérifier les mises à jour avant de quitter ? (o/N) : ')}").strip().lower()
+            if ans in ("o", "oui", "y", "yes"):
+                print(f"\n{c(BLUE, '[*]')} Recherche de mises à jour en cours...")
+                import subprocess
+                try:
+                    result = subprocess.run(["git", "pull"], capture_output=True, text=True, check=True)
+                    if "Already up to date" in result.stdout or "Déjà à jour" in result.stdout:
+                        print(c(GREEN, "[+] WebMapper est déjà à la dernière version !"))
+                    else:
+                        print(c(GREEN, "[+] WebMapper a été mis à jour avec succès !"))
+                        print(c(DIM + WHITE, result.stdout.strip()))
+                except Exception as e:
+                    print(c(RED, f"[!] Échec de la mise à jour. Erreur: {e}"))
+            
+            print(c(GREEN, "\n[*] Merci d'avoir utilisé WebMapper. À bientôt !"))
             break
 
         else:
@@ -262,6 +276,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--wordlist", type=str, default=None, help="Chemin vers une wordlist custom pour l'énumération DNS")
     parser.add_argument("--ports", type=str, default=None, help="Ports à scanner (ex: '80,443')")
     parser.add_argument("--nuclei-args", type=str, default=None, help="Arguments supplémentaires à passer à Nuclei (ex: '-tags cve')")
+    parser.add_argument("--update", action="store_true", help="Met à jour WebMapper via git pull et quitte")
     
     return parser.parse_args()
 
@@ -273,6 +288,20 @@ def main() -> None:
     sys.stdout = MarginStdout(sys.stdout, margin=6)
     
     args = parse_args()
+
+    if args.update:
+        print(f"\n{c(BLUE, '[*]')} Recherche de mises à jour en cours...")
+        import subprocess
+        try:
+            result = subprocess.run(["git", "pull"], capture_output=True, text=True, check=True)
+            if "Already up to date" in result.stdout or "Déjà à jour" in result.stdout:
+                print(c(GREEN, "[+] WebMapper est déjà à la dernière version !"))
+            else:
+                print(c(GREEN, "[+] WebMapper a été mis à jour avec succès !"))
+                print(c(DIM + WHITE, result.stdout.strip()))
+        except Exception as e:
+            print(c(RED, f"[!] Échec de la mise à jour. Erreur: {e}"))
+        sys.exit(0)
 
     # Configuration du logging sur stdout pour respecter la marge globale
     log_level = logging.DEBUG if args.verbose else logging.INFO
