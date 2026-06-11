@@ -47,13 +47,13 @@ cd WebMapper
 
 ### Linux (recommandé)
 ```bash
-chmod +x install.sh
-./install.sh
+chmod +x ./webmapper/scripts/install.sh
+./webmapper/scripts/install.sh
 ```
 
 ### Windows
 ```powershell
-.\install.bat
+.\webmapper\scripts\install.bat
 ```
 
 ### Mettre à jour WebMapper

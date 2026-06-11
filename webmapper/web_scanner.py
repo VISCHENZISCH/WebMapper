@@ -20,6 +20,7 @@ import warnings
 from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 import random
@@ -427,6 +428,10 @@ class WebScanner:
             nonlocal completed_count
             if self.stopped:
                 return
+                
+            # OPSEC: Jitter (délai aléatoire) pour éviter les signatures de vélocité
+            time.sleep(random.uniform(0.5, 2.5))
+            
             with self.print_lock:
                 print(f"{SKY_BLUE}[*]{RESET} Analyse de : {BOLD}{WHITE}{link}{RESET}\n")
             

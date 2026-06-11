@@ -3,3 +3,5 @@ beautifulsoup4
 urllib3
 python-nmap
 dnspython
+curl_cffi
+httpx

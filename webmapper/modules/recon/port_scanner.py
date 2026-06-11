@@ -119,7 +119,8 @@ def _tcp_connect(
                     sock.settimeout(1.5)
                     # Envoyer un probe HTTP basique pour les ports web
                     if port in (80, 8080, 8000, 8008, 8888, 3000, 5000, 8443, 443):
-                        sock.sendall(b"HEAD / HTTP/1.0\r\nHost: target\r\n\r\n")
+                        probe = f"HEAD / HTTP/1.0\r\nHost: {target}\r\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)\r\n\r\n".encode("utf-8")
+                        sock.sendall(probe)
                     banner = sock.recv(512).decode("utf-8", errors="ignore").strip()
                 except (socket.timeout, OSError):
                     pass
