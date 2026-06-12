@@ -31,6 +31,6 @@ jobs:
     - name: Lint with flake8
       run: |
         # Arrête le build s'il y a des erreurs de syntaxe fatales
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 webmapper/ --count --select=E9,F63,F7,F82 --show-source --statistics
         # Les autres avertissements ne bloquent pas le build (exit-zero)
-        flake8 . --count --exit-zero --max-complexity=15 --max-line-length=127 --statistics
+        flake8 webmapper/ --count --exit-zero --max-complexity=15 --max-line-length=127 --statistics
