@@ -22,7 +22,7 @@
 ### Moteur de scan
 - **Menu interactif** : Choisissez parmi 6 actions ciblées (Full Scan, Direct, Crawl, DNS, Nmap, Nuclei)
 - **Énumération DNS avancée** : Découverte de sous-domaines via une wordlist embarquée de 2000 entrées.
-- **Port Scanning intelligent** : Détection de ports via Nmap (Mode rapide & Mode Deep Scan avec `nmap.json`). Déduplication automatique des IP pour accélérer le processus.
+- **Port Scanning intelligent** 
 - **Crawling récursif** : exploration automatique de tous les liens du domaine cible.
 - **Intégration Nuclei** : Exécution automatique de templates de vulnérabilités.
 - **Multi-threading** : exécution parallèle des modules avec gestion dynamique des *workers*.
