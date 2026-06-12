@@ -45,7 +45,7 @@ USER_AGENTS: Final[tuple[str, ...]] = (
 # En-têtes réalistes par défaut
 DEFAULT_HEADERS: Final[dict[str, str]] = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-    "Accept-Language": "fr,fr-FR;q=0.8,en-US;q=0.5,en;q=0.3",
+    "Accept-Language": "en-US,en;q=0.9",
     "Accept-Encoding": "gzip, deflate, br",
     "Connection": "keep-alive",
     "Upgrade-Insecure-Requests": "1",

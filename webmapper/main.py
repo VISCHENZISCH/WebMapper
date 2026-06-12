@@ -76,7 +76,7 @@ def show_banner() -> None:
 
 
 def clear_terminal() -> None:
-    os.system("cls" if os.name == "nt" else "clear")
+    print("\033c", end="")
 
 
 def ask_to_continue() -> bool:
@@ -400,7 +400,7 @@ def main() -> None:
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     print(c(BLUE, "[*] Vérification du protocole cible..."))
     try:
-        res = requests.get(args.url, verify=False, proxies=proxy, timeout=5)
+        res = requests.get(args.url, verify=False, proxies=proxy, timeout=5)  # nosec B501 ( Scanner requires invalid cert support )
         if args.url.startswith("http://") and "The plain HTTP request was sent to HTTPS port" in res.text:
             args.url = args.url.replace("http://", "https://", 1)
             print(c(YELLOW, f"[i] Port HTTPS détecté, correction automatique : {args.url}"))
@@ -411,7 +411,7 @@ def main() -> None:
     except requests.exceptions.ConnectionError:
         alt_url = args.url.replace("http://", "https://", 1) if args.url.startswith("http://") else args.url.replace("https://", "http://", 1)
         try:
-            requests.get(alt_url, verify=False, proxies=proxy, timeout=5)
+            requests.get(alt_url, verify=False, proxies=proxy, timeout=5)  # nosec B501 ( Scanner requires invalid cert support )
             args.url = alt_url
             print(c(YELLOW, f"[i] Changement de protocole (HTTP/HTTPS) réussi : {args.url}"))
         except Exception:

