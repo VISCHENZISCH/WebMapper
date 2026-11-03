@@ -156,6 +156,9 @@ def run_action(ws, action_key: str) -> int:
     0 = aucun finding critique/high, 1 = au moins un finding critique/high.
     """
     method_name, report_key, label = ACTIONS[action_key]
+    # Repart d'un état propre : findings non cumulés entre deux options
+    # du menu et flag stopped réarmé après un éventuel Ctrl+C précédent.
+    ws.reset()
     try:
         getattr(ws, method_name)()
         print(f"\n{c(GREEN, f'[*] {label} terminé.')}")
@@ -223,6 +226,7 @@ def menu_loop(ws, url: str) -> int:
 
         elif choice == "3":
             try:
+                ws.reset()
                 print(f"\n{c(BLUE, '[*] Crawling sur :')} {c(CYAN, url)}")
                 ws.crawl()
                 n = len(ws.link_list)

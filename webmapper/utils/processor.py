@@ -27,26 +27,26 @@ logger = logging.getLogger("webmapper.processor")
 # Sévérités et priorités 
 
 class Severity:
-    """Constantes de sévérité avec priorité de tri."""
+    """Constantes de sévérité et ordre de tri."""
     CRITICAL: Final[str] = "critical"
     HIGH: Final[str] = "high"
     MEDIUM: Final[str] = "medium"
     LOW: Final[str] = "low"
     INFO: Final[str] = "info"
 
-    # Priorité de tri : plus le score est élevé, plus c'est grave
-    PRIORITY: Final[dict[str, int]] = {
-        "critical": 5,
-        "high": 4,
-        "medium": 3,
-        "low": 2,
-        "info": 1,
-    }
+    # Ordre de gravité décroissante (le premier est le plus grave)
+    ORDER: Final[tuple[str, ...]] = ("critical", "high", "medium", "low", "info")
 
     @staticmethod
-    def priority(severity: str) -> int:
-        """Retourne le score de priorité d'une sévérité."""
-        return Severity.PRIORITY.get(severity.lower(), 0)
+    def rank(severity: str) -> int:
+        """Retourne le rang de tri d'une sévérité (0 = le plus grave).
+
+        Une sévérité inconnue est placée en dernier.
+        """
+        try:
+            return Severity.ORDER.index(severity.lower())
+        except ValueError:
+            return len(Severity.ORDER)
 
 
 # Finding standardisé 
@@ -80,7 +80,7 @@ class Finding:
     def __post_init__(self) -> None:
         """Normalise la sévérité et génère le fingerprint."""
         self.severity = self.severity.lower()
-        if self.severity not in Severity.PRIORITY:
+        if self.severity not in Severity.ORDER:
             self.severity = "info"
         if not self.timestamp:
             self.timestamp = datetime.now(timezone.utc).isoformat()
@@ -181,8 +181,7 @@ class ScanResult:
         """
         sorted_findings = sorted(
             self.findings,
-            key=lambda f: Severity.priority(f.severity),
-            reverse=True,
+            key=lambda f: Severity.rank(f.severity),
         )
         yield from sorted_findings
 
@@ -288,8 +287,7 @@ class ResultAggregator:
         # Tri par sévérité décroissante
         sorted_findings = sorted(
             self._findings,
-            key=lambda f: Severity.priority(f.severity),
-            reverse=True,
+            key=lambda f: Severity.rank(f.severity),
         )
 
         return ScanResult(

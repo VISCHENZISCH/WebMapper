@@ -10,7 +10,6 @@ WebScanner - moteur principal de WebMapper.
   - Agrégation des findings au format unifié
 
 """
-import sys
 import importlib
 import os
 import shlex
@@ -107,6 +106,20 @@ class WebScanner:
     def findings(self) -> list[dict]:
         """Retourne la liste des findings au format dict (rétrocompatibilité)."""
         return self.aggregator.finalize().to_dict_list()
+
+    def reset(self) -> None:
+        """Réinitialise l'état entre deux actions lancées depuis le menu.
+
+        Chaque scan repart ainsi d'un agrégateur vierge (findings non
+        cumulés entre les options), d'un flag stopped remis à False
+        (sinon un Ctrl+C antérieur gèle tous les scans suivants) et
+        d'une liste de liens / sous-domaines propre.
+        """
+        self.stopped = False
+        self.link_list = [self.url]
+        self.aggregator = ResultAggregator()
+        if hasattr(self, "subdomains"):
+            del self.subdomains
 
     # Chargement dynamique des modules
 
@@ -227,7 +240,8 @@ class WebScanner:
                         print(f"{SKY_BLUE}[+] {RESET}Lien découvert : {WHITE}{link}{RESET}")
         except KeyboardInterrupt:
             print(f"\n{GOLD}[!] Crawl interrompu.{RESET}")
-            sys.exit(0)
+            self.stopped = True
+            return
 
     
     # Scan de vulnérabilités
