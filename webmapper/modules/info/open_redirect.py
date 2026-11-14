@@ -12,8 +12,8 @@ import urllib.parse
 import requests
 from bs4 import BeautifulSoup
 
-DELAY = 0.5
-TIMEOUT = 10
+DELAY = 0.0
+TIMEOUT = 8
 
 EVIL_URL = "https://evil-attacker.com"
 
@@ -32,7 +32,8 @@ def scan(url: str, session: requests.Session) -> list[dict]:
     Les redirections NE sont PAS suivies (allow_redirects=False).
     """
     findings = []
-    time.sleep(DELAY)
+    if DELAY > 0:
+        time.sleep(DELAY)
 
     #Paramètres GET dans l'URL
     parsed = urllib.parse.urlparse(url)
@@ -47,7 +48,8 @@ def scan(url: str, session: requests.Session) -> list[dict]:
         new_query = urllib.parse.urlencode(test_params, doseq=True)
         test_url = parsed._replace(query=new_query).geturl()
 
-        time.sleep(DELAY)
+        if DELAY > 0:
+            time.sleep(DELAY)
         try:
             res = session.get(test_url, timeout=TIMEOUT, allow_redirects=False)
             location = res.headers.get("Location", "")
@@ -92,7 +94,8 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                     form_data[fname] = field.get("value", "test")
             form_data[name] = EVIL_URL
 
-            time.sleep(DELAY)
+            if DELAY > 0:
+                time.sleep(DELAY)
             try:
                 if method == "POST":
                     res = session.post(target_url, data=form_data,

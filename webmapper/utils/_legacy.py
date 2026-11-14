@@ -168,17 +168,45 @@ USER_AGENTS = [
 ]
 
 
+from functools import lru_cache
+from bs4 import BeautifulSoup
+
+
 def calculate_similarity(text1: str, text2: str) -> float:
     """
     Calcule le ratio de similarité structurelle entre deux pages HTML.
-    Utilise quick_ratio() en pré-filtre O(n) avant ratio() O(n²)
-    pour éviter les calculs coûteux sur les grandes pages.
+    Optimisé avec vérification O(1) d'égalité et pré-filtre quick_ratio() O(n).
     """
-    sm = difflib.SequenceMatcher(None, text1 or "", text2 or "")
-    # Filtre rapide : si quick_ratio < 0.5 → inutile de calculer le ratio exact
-    if sm.quick_ratio() < 0.5:
-        return sm.quick_ratio()
+    if text1 == text2:
+        return 1.0
+    if not text1 or not text2:
+        return 0.0
+
+    len1, len2 = len(text1), len(text2)
+    # Si les longueurs sont extrêmement différentes, similarité forcément faible
+    if min(len1, len2) / max(len1, len2) < 0.4:
+        return 0.0
+
+    sm = difflib.SequenceMatcher(None, text1, text2)
+    qr = sm.quick_ratio()
+    # quick_ratio() est une borne supérieure mathématique de ratio().
+    # Si qr < 0.80, impossible que ratio() dépasse 0.80.
+    if qr < 0.80 or qr > 0.98:
+        return qr
     return sm.ratio()
+
+
+@lru_cache(maxsize=128)
+def extract_forms_cached(html_source: str) -> tuple[tuple[str, str, str, dict, list[str]], ...]:
+    """Extrait et met en cache LRU les formulaires HTML pour éviter de re-parser le DOM."""
+    soup = BeautifulSoup(html_source, "html.parser")
+    forms_data = []
+    for form in soup.find_all("form"):
+        action = form.get("action", "")
+        method = (form.get("method", "GET")).upper()
+        template, injectable = extract_form_fields(form, include_hidden=True)
+        forms_data.append((str(form), action, method, template, injectable))
+    return tuple(forms_data)
 
 
 def obfuscate_payload(payload: str, method: str = "url") -> str:

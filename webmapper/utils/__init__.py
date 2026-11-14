@@ -37,6 +37,7 @@ from utils._legacy import (
     calculate_similarity,
     obfuscate_payload,
     extract_form_fields,
+    extract_forms_cached,
 )
 
 # Nouveaux modules

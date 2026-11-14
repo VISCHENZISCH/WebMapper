@@ -11,8 +11,8 @@ Logique de détection :
 import time
 import requests
 
-DELAY = 0.5
-TIMEOUT = 10
+DELAY = 0.0
+TIMEOUT = 8
 
 EVIL_ORIGIN = "https://evil-attacker.com"
 
@@ -22,7 +22,8 @@ def scan(url: str, session: requests.Session) -> list[dict]:
     Détecte les misconfiguration CORS sur l'URL cible.
     """
     findings = []
-    time.sleep(DELAY)
+    if DELAY > 0:
+        time.sleep(DELAY)
 
     try:
         res = session.get(

@@ -11,8 +11,8 @@ import urllib.parse
 import requests
 from bs4 import BeautifulSoup
 
-DELAY = 0.5
-TIMEOUT = 10
+DELAY = 0.0
+TIMEOUT = 8
 
 # Payloads de détection : (payload, résultat_attendu_dans_la_réponse, moteur_cible)
 DETECTION_PAYLOADS = [
@@ -50,7 +50,8 @@ def _test_params(session, method, url, params, payload, expected) -> tuple[bool,
         test = dict(params)
         test[param_name] = payload
         try:
-            time.sleep(DELAY)
+            if DELAY > 0:
+                time.sleep(DELAY)
             if method == "POST":
                 res = session.post(url, data=test, timeout=TIMEOUT)
             else:
@@ -67,7 +68,8 @@ def scan(url: str, session: requests.Session) -> list[dict]:
     Détecte les vulnérabilités SSTI sur les paramètres GET et les formulaires POST.
     """
     findings = []
-    time.sleep(DELAY)
+    if DELAY > 0:
+        time.sleep(DELAY)
 
     try:
         response = session.get(url, timeout=TIMEOUT)

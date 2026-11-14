@@ -14,8 +14,8 @@ import requests
 
 logger = logging.getLogger("webmapper.xxe")
 
-DELAY = 0.5
-TIMEOUT = 10
+DELAY = 0.0
+TIMEOUT = 8
 
 # Payloads XXE - lecture de fichier local et provocation d'erreur parser
 XXE_PAYLOADS = [
@@ -81,7 +81,8 @@ def scan(url: str, session: requests.Session) -> list[dict]:
 
     for payload_body, payload_id in XXE_PAYLOADS:
         for content_type in XML_CONTENT_TYPES:
-            time.sleep(DELAY)
+            if DELAY > 0:
+                time.sleep(DELAY)
             try:
                 res = session.post(
                     url,
@@ -89,9 +90,9 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                     headers={"Content-Type": content_type},
                     timeout=TIMEOUT,
                 )
-                # Ignorer les erreurs 404/415 (endpoint ne supporte pas XML)
+                # Si l'endpoint ne supporte pas POST ou rejette le XML (415/405/404), inutile d'insister
                 if res.status_code in (404, 415, 405):
-                    continue
+                    return findings
 
                 resp_lower = res.text.lower()
 

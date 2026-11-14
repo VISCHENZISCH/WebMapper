@@ -68,11 +68,11 @@ class SessionConfig:
         proxy:            Dictionnaire de proxy {"http": ..., "https": ...}.
         user_agent:       User-Agent fixe (utilisé si rotate_ua=False).
     """
-    timeout: int = 10
-    max_retries: int = 3
-    backoff_factor: float = 0.3
-    pool_connections: int = 10
-    pool_maxsize: int = 20
+    timeout: int = 8
+    max_retries: int = 2
+    backoff_factor: float = 0.2
+    pool_connections: int = 50
+    pool_maxsize: int = 50
     rotate_ua: bool = True
     proxy: dict[str, str] | None = None
     user_agent: str = USER_AGENTS[0]
@@ -125,7 +125,7 @@ class ManagedSession:
             connect=0,  # Ne pas retry sur timeout de connexion (évite de bloquer le scanner)
             read=self._config.max_retries,
             backoff_factor=self._config.backoff_factor,
-            status_forcelist=[429, 500, 502, 503, 504],
+            status_forcelist=[429, 502, 503, 504],
             allowed_methods=["GET", "POST", "HEAD", "OPTIONS"],
         )
         adapter = HTTPAdapter(

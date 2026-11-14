@@ -17,8 +17,8 @@ import requests
 
 logger = logging.getLogger("webmapper.cookies")
 
-DELAY: Final[float] = 0.5
-TIMEOUT: Final[int] = 10
+DELAY: float = 0.0
+TIMEOUT: Final[int] = 8
 
 # Noms de cookies considérés comme sensibles
 SENSITIVE_PATTERNS: Final[tuple[str, ...]] = (
@@ -128,7 +128,8 @@ def _parse_set_cookie_headers(response: requests.Response) -> dict[str, CookiePr
 def scan(url: str, session: requests.Session) -> list[dict]:
     """Audit approfondi des cookies de session et de suivi."""
     findings: list[dict] = []
-    time.sleep(DELAY)
+    if DELAY > 0:
+        time.sleep(DELAY)
 
     try:
         response = session.get(url, timeout=TIMEOUT)

@@ -109,6 +109,10 @@ def print_config(args) -> None:
         print(f"    {c(WHITE, 'Proxy')}        : {c(CYAN, args.proxy)}")
     if args.verbose:
         print(f"    {c(WHITE, 'Mode')}         : {c(YELLOW, 'VERBOSE')}")
+    if getattr(args, "delay", 0.0) > 0:
+        print(f"    {c(WHITE, 'Délai requêtes')} : {c(CYAN, f'{args.delay}s')}")
+    else:
+        print(f"    {c(WHITE, 'Vitesse')}        : {c(EMERALD, 'MAXIMALE (0s delay)')}")
     if getattr(args, "wordlist", None):
         print(f"    {c(WHITE, 'Wordlist')}     : {c(CYAN, args.wordlist)}")
     if getattr(args, "ports", None):
@@ -272,6 +276,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("url", nargs="?", help="URL cible (ex: http://example.com)")
     parser.add_argument("-t", "--threads", type=int, default=5, help="Nombre de threads parallèles (défaut: 5)")
+    parser.add_argument("--delay", type=float, default=0.0, help="Délai entre requêtes en secondes (défaut: 0.0 pour vitesse maximale)")
     parser.add_argument("--proxy", type=str, default=None, help="Proxy HTTP (ex: http://127.0.0.1:8080)")
     parser.add_argument("--no-rotate-ua", action="store_true", help="Désactiver la rotation de User-Agent")
     parser.add_argument("-v", "--verbose", action="store_true", help="Mode verbose (affiche les logs de debug)")
@@ -433,6 +438,7 @@ def main() -> None:
         wordlist=args.wordlist,
         ports_config=args.ports,
         nuclei_args=args.nuclei_args,
+        delay=args.delay,
     )
     exit_code = menu_loop(ws, args.url)
     sys.exit(exit_code)

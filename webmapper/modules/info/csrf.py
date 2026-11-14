@@ -13,8 +13,8 @@ import time
 import requests
 from bs4 import BeautifulSoup
 
-DELAY = 0.5
-TIMEOUT = 10
+DELAY = 0.0
+TIMEOUT = 8
 
 # Noms courants des tokens CSRF dans les formulaires
 CSRF_TOKEN_NAMES = {
@@ -50,7 +50,8 @@ def scan(url: str, session: requests.Session) -> list[dict]:
     Détecte l'absence de protection CSRF sur les formulaires POST.
     """
     findings = []
-    time.sleep(DELAY)
+    if DELAY > 0:
+        time.sleep(DELAY)
 
     try:
         response = session.get(url, timeout=TIMEOUT)

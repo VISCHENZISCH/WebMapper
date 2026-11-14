@@ -30,10 +30,19 @@ DEFAULT_WORDLIST: Final[str] = os.path.join(
 )
 
 # Timeout par résolution DNS (secondes)
-DNS_TIMEOUT: Final[float] = 3.0
+DNS_TIMEOUT: Final[float] = 2.0
 
 # Workers par défaut pour la résolution concurrente
-DEFAULT_WORKERS: Final[int] = 20
+DEFAULT_WORKERS: Final[int] = 30
+
+# Initialisation d'une instance unique réutilisable pour éviter l'overhead d'instanciation
+try:
+    import dns.resolver
+    _GLOBAL_RESOLVER = dns.resolver.Resolver()
+    _GLOBAL_RESOLVER.timeout = DNS_TIMEOUT
+    _GLOBAL_RESOLVER.lifetime = DNS_TIMEOUT
+except ImportError:
+    _GLOBAL_RESOLVER = None
 
 
 # Modèle de résultat
@@ -81,46 +90,21 @@ def _stream_wordlist(path: str) -> Generator[str, None, None]:
 # Résolution DNS
 
 def _resolve_subdomain(fqdn: str, timeout: float = DNS_TIMEOUT) -> SubdomainResult | None:
-    """Tente une résolution DNS A sur un FQDN.
-
-    Utilise socket.getaddrinfo (standard library) pour éviter
-    la dépendance à dnspython pour le cas basique.
-    Fallback sur dns.resolver si dnspython est installé.
-
-    Args:
-        fqdn:    Nom de domaine complet à résoudre.
-        timeout: Timeout en secondes.
-
-    Returns:
-        SubdomainResult si le sous-domaine répond, None sinon.
-    """
-    try:
-        # Tentative via dnspython (plus précis, supporte les types de records)
-        import dns.resolver
-        resolver = dns.resolver.Resolver()
-        resolver.timeout = timeout
-        resolver.lifetime = timeout
-        answers = resolver.resolve(fqdn, "A")
-        if answers:
-            ip = str(answers[0])
-            return SubdomainResult(subdomain=fqdn, ip=ip)
-    except ImportError:
-        # Fallback sur socket (standard library)
+    """Tente une résolution DNS A sur un FQDN de manière optimisée."""
+    if _GLOBAL_RESOLVER is not None:
         try:
-            old_timeout = socket.getdefaulttimeout()
-            socket.setdefaulttimeout(timeout)
-            try:
-                result = socket.getaddrinfo(fqdn, None, socket.AF_INET)
-                if result:
-                    ip = result[0][4][0]
-                    return SubdomainResult(subdomain=fqdn, ip=ip)
-            finally:
-                socket.setdefaulttimeout(old_timeout)
+            answers = _GLOBAL_RESOLVER.resolve(fqdn, "A")
+            if answers:
+                return SubdomainResult(subdomain=fqdn, ip=str(answers[0]))
+        except Exception:
+            return None
+    else:
+        try:
+            result = socket.getaddrinfo(fqdn, None, socket.AF_INET)
+            if result:
+                return SubdomainResult(subdomain=fqdn, ip=result[0][4][0])
         except (socket.gaierror, socket.timeout, OSError):
             return None
-    except Exception:
-        return None
-
     return None
 
 

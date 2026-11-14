@@ -21,8 +21,12 @@ from utils import extract_form_fields
 
 logger = logging.getLogger("webmapper.xss")
 
-DELAY: Final[float] = 0.5
-TIMEOUT: Final[int] = 10
+DELAY: float = 0.0
+TIMEOUT: Final[int] = 8
+
+def _sleep():
+    if DELAY > 0:
+        _sleep()
 
 
 # Payloads XSS
@@ -337,7 +341,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
             seen.add(key)
             findings.append(f)
 
-    time.sleep(DELAY)
+    _sleep()
 
     try:
         response = session.get(url, timeout=TIMEOUT)
@@ -359,7 +363,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
             new_query = urllib.parse.urlencode(test, doseq=True)
             test_url = parsed._replace(query=new_query).geturl()
             try:
-                time.sleep(DELAY)
+                _sleep()
                 res = session.get(test_url, timeout=TIMEOUT)
                 if _is_reflected(res.text, payload):
                     add_finding({
@@ -381,7 +385,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                 new_query = urllib.parse.urlencode(test, doseq=True)
                 test_url = parsed._replace(query=new_query).geturl()
                 try:
-                    time.sleep(DELAY)
+                    _sleep()
                     res = session.get(test_url, timeout=TIMEOUT)
                     if _is_reflected(res.text, payload):
                         add_finding({
@@ -412,7 +416,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                 params = template.copy()
                 params[field_name] = payload
                 try:
-                    time.sleep(DELAY)
+                    _sleep()
                     if method == "POST":
                         res = session.post(target_url, data=params, timeout=TIMEOUT)
                     else:
@@ -442,7 +446,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
     for header in target_headers:
         for payload in BASIC_PAYLOADS[:3]:
             try:
-                time.sleep(DELAY)
+                _sleep()
                 res = session.get(
                     url, headers={header: payload}, timeout=TIMEOUT,
                 )

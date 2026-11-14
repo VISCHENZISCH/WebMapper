@@ -68,15 +68,17 @@ class WebScanner:
         wordlist: str | None = None,
         ports_config: str | None = None,
         nuclei_args: str | None = None,
+        delay: float = 0.0,
     ):
         self.url = url.rstrip("/")
         self.proxy = proxy
         self.user_agent = user_agent
-        self.max_threads = max_threads
+        self.max_threads = max(1, max_threads)
         self.rotate_ua = rotate_ua
         self.wordlist = wordlist
         self.ports_config = ports_config
         self.nuclei_args = nuclei_args
+        self.delay = max(0.0, delay)
 
         # Gestionnaire de sessions HTTP isolées (fix bugs #2 & #3)
         # Chaque module/thread reçoit sa propre session avec son
@@ -100,6 +102,9 @@ class WebScanner:
 
         # Chargement dynamique des modules
         self._modules = self._load_modules()
+        for mod in self._modules:
+            if hasattr(mod, "DELAY"):
+                mod.DELAY = self.delay
         print(f"{EMERALD}[+] {len(self._modules)} module(s) chargé(s){RESET}")
 
     @property
@@ -108,18 +113,18 @@ class WebScanner:
         return self.aggregator.finalize().to_dict_list()
 
     def reset(self) -> None:
-        """Réinitialise l'état entre deux actions lancées depuis le menu.
-
-        Chaque scan repart ainsi d'un agrégateur vierge (findings non
-        cumulés entre les options), d'un flag stopped remis à False
-        (sinon un Ctrl+C antérieur gèle tous les scans suivants) et
-        d'une liste de liens / sous-domaines propre.
-        """
+        """Réinitialise l'état entre deux actions lancées depuis le menu."""
         self.stopped = False
         self.link_list = [self.url]
         self.aggregator = ResultAggregator()
         if hasattr(self, "subdomains"):
             del self.subdomains
+        for mod in self._modules:
+            if hasattr(mod, "reset_cache"):
+                try:
+                    mod.reset_cache()
+                except Exception:
+                    pass
 
     # Chargement dynamique des modules
 
@@ -214,79 +219,113 @@ class WebScanner:
         return link_list
 
     def crawl(self, max_pages: int = 100):
-        """Crawling itératif (BFS) du domaine cible pour éviter RecursionError."""
+        """Crawling concurrent BFS du domaine cible pour une rapidité maximale."""
         from collections import deque
+        import concurrent.futures
 
-        queue = deque([self.url])
         visited = {self.url.rstrip("/")}
         self.link_list = [self.url]
+        queue = deque([self.url])
+        lock = threading.Lock()
 
-        pages_count = 0
+        workers = min(self.max_threads, 10)
+
+        def crawl_worker(target_page: str):
+            if self.stopped:
+                return []
+            try:
+                return self.get_page_links(target_page)
+            except Exception:
+                return []
+
         try:
-            while queue and pages_count < max_pages:
-                if self.stopped:
-                    break
-                current_url = queue.popleft()
-                pages_count += 1
+            with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+                active_futures = {}
+                while (queue or active_futures) and len(self.link_list) < max_pages:
+                    if self.stopped:
+                        break
 
-                # Extraction des liens
-                links = self.get_page_links(current_url)
-                for link in links:
-                    clean = link.rstrip("/")
-                    if clean not in visited:
-                        visited.add(clean)
-                        self.link_list.append(link)
-                        queue.append(link)
-                        print(f"{SKY_BLUE}[+] {RESET}Lien découvert : {WHITE}{link}{RESET}")
+                    while queue and len(active_futures) < workers and (len(self.link_list) + len(active_futures)) < max_pages:
+                        next_url = queue.popleft()
+                        future = executor.submit(crawl_worker, next_url)
+                        active_futures[future] = next_url
+
+                    if not active_futures:
+                        break
+
+                    done, _ = concurrent.futures.wait(
+                        active_futures.keys(),
+                        return_when=concurrent.futures.FIRST_COMPLETED
+                    )
+
+                    for fut in done:
+                        active_futures.pop(fut, None)
+                        try:
+                            found_links = fut.result()
+                        except Exception:
+                            found_links = []
+
+                        with lock:
+                            for link in found_links:
+                                clean = link.rstrip("/")
+                                if clean not in visited and len(self.link_list) < max_pages:
+                                    visited.add(clean)
+                                    self.link_list.append(link)
+                                    queue.append(link)
+                                    with self.print_lock:
+                                        print(f"{SKY_BLUE}[+] {RESET}Lien découvert : {WHITE}{link}{RESET}")
         except KeyboardInterrupt:
-            print(f"\n{GOLD}[!] Crawl interrompu.{RESET}")
+            with self.print_lock:
+                print(f"\n{GOLD}[!] Crawl interrompu.{RESET}")
             self.stopped = True
-            return
 
     
     # Scan de vulnérabilités
    
-    def _run_modules_on(self, url: str):
-        """Exécute tous les modules chargés sur une URL et agrège les findings."""
-        # Session isolée par thread via SessionManager (fix bugs #2 & #3)
+    def _run_single_module(self, mod, url: str):
+        """Exécute un seul module sur une URL de manière isolée et thread-safe."""
+        if self.stopped:
+            return
+        mod_name = mod.__name__.split(".")[-1]
         session = self.session_manager.get_thread_session()
+        try:
+            ua = random.choice(USER_AGENTS) if self.rotate_ua else self.user_agent
+            session.headers.update({
+                "User-Agent": ua,
+                "Referer": url,
+            })
 
+            results = mod.scan(url, session)
+            if results:
+                with self.findings_lock:
+                    self.aggregator.add_findings(results, source=mod_name)
+                with self.print_lock:
+                    for f in results:
+                        sev   = f.get("severity", "info").upper()
+                        ftype = f.get("type", "?")
+                        
+                        color, label = {
+                            "CRITICAL": (CRIMSON, "[CRITICAL]"),
+                            "HIGH":     (CRIMSON, "[HIGH]    "),
+                            "MEDIUM":   (GOLD,    "[MEDIUM]  "),
+                            "LOW":      (SKY_BLUE, "[LOW]     "),
+                            "INFO":     (WHITE,    "[INFO]    "),
+                        }.get(sev, (WHITE, "[INFO]    "))
+                        
+                        detail = f.get('detail', '')
+                        if len(detail) > 95:
+                            detail = detail[:92] + "..."
+                        print(f"{color}{label} {ftype:<30} {RESET}- {detail}")
+        except Exception as exc:
+            with self.print_lock:
+                print(f"{CRIMSON}[!] Erreur module {mod_name} sur {url} : {_format_exc(exc)}{RESET}")
+
+    def _run_modules_on(self, url: str):
+        """Exécute tous les modules chargés sur une URL."""
         for mod in self._modules:
             if self.stopped:
                 break
-            mod_name = mod.__name__.split(".")[-1]
-            try:
-                # Rotation de User-Agent par URL (la session est isolée par thread)
-                ua = random.choice(USER_AGENTS) if self.rotate_ua else self.user_agent
-                session.headers.update({
-                    "User-Agent": ua,
-                    "Referer": url,
-                })
-
-                results = mod.scan(url, session)
-                if results:
-                    with self.findings_lock:
-                        self.aggregator.add_findings(results, source=mod_name)
-                    with self.print_lock:
-                        for f in results:
-                            sev   = f.get("severity", "info").upper()
-                            ftype = f.get("type", "?")
-                            
-                            color, label = {
-                                "CRITICAL": (CRIMSON, "[CRITICAL]"),
-                                "HIGH":     (CRIMSON, "[HIGH]    "),
-                                "MEDIUM":   (GOLD,    "[MEDIUM]  "),
-                                "LOW":      (SKY_BLUE, "[LOW]     "),
-                                "INFO":     (WHITE,    "[INFO]    "),
-                            }.get(sev, (WHITE, "[INFO]    "))
-                            
-                            detail = f.get('detail', '')
-                            if len(detail) > 95:
-                                detail = detail[:92] + "..."
-                            print(f"{color}{label} {ftype:<30} {RESET}- {detail}")
-            except Exception as exc:
-                with self.print_lock:
-                    print(f"{CRIMSON}[!] Erreur module {mod_name} sur {url} : {_format_exc(exc)}{RESET}")
+            self._run_single_module(mod, url)
 
     def _run_dns_enum(self):
         """Exécute l'énumération de sous-domaines."""
@@ -429,22 +468,40 @@ class WebScanner:
         self._run_nuclei()
 
     def _scan_link_list(self):
-        """Exécute les modules sur toutes les URLs dans link_list en parallèle."""
+        """Exécute les modules sur toutes les URLs dans link_list en parallèle optimisé."""
         with self.print_lock:
             print(f"[*] {'Lancement de la recherche de vulnérabilités...'.center(50)}\n")
-         
 
         total_urls = len(self.link_list)
         completed_count = 0
         counter_lock = threading.Lock()
+
+        # Optimisation majeure : si 1 seule URL (ex: scan direct), tous les threads scannent les modules en parallèle
+        if total_urls == 1:
+            url = self.link_list[0]
+            with self.print_lock:
+                print(f"{SKY_BLUE}[*]{RESET} Analyse multi-threadée de : {BOLD}{WHITE}{url}{RESET}\n")
+            try:
+                with ThreadPoolExecutor(max_workers=min(len(self._modules), self.max_threads)) as executor:
+                    futures = [executor.submit(self._run_single_module, mod, url) for mod in self._modules]
+                    for future in futures:
+                        future.result()
+            except KeyboardInterrupt:
+                with self.print_lock:
+                    print(f"\n{GOLD}[!] Scan interrompu.{RESET}")
+                self.stopped = True
+            with self.print_lock:
+                print(f"\n{EMERALD}[+] [1/1]{RESET} Terminé : {DARK_GREY}{url}{RESET}\n")
+            return
 
         def worker(link):
             nonlocal completed_count
             if self.stopped:
                 return
                 
-            # OPSEC: Jitter (délai aléatoire) pour éviter les signatures de vélocité
-            time.sleep(random.uniform(0.5, 2.5))
+            # Jitter uniquement si un délai explicite a été configuré
+            if self.delay > 0:
+                time.sleep(random.uniform(0.1, self.delay))
             
             with self.print_lock:
                 print(f"{SKY_BLUE}[*]{RESET} Analyse de : {BOLD}{WHITE}{link}{RESET}\n")

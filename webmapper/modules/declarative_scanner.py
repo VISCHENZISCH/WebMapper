@@ -10,8 +10,20 @@ from utils import obfuscate_payload
 # Répertoire des règles JSON déclaratives
 RULES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "rules")
 
+_CACHED_RULES: list[dict] | None = None
+_TESTED_TARGETS: set[str] = set()
+
+
+def reset_cache():
+    """Réinitialise les cibles testées entre deux scans."""
+    _TESTED_TARGETS.clear()
+
 
 def load_rules() -> list[dict]:
+    global _CACHED_RULES
+    if _CACHED_RULES is not None:
+        return _CACHED_RULES
+
     rules = []
     if not os.path.isdir(RULES_DIR):
         return rules
@@ -25,7 +37,8 @@ def load_rules() -> list[dict]:
                         rules.append(rule)
             except Exception:
                 pass
-    return rules
+    _CACHED_RULES = rules
+    return _CACHED_RULES
 
 
 def match_response(res: requests.Response, matcher: dict) -> bool:
@@ -95,6 +108,11 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                 target_url = f"{parsed_url.scheme}://{parsed_url.netloc}{path_suffix}"
             else:
                 target_url = urllib.parse.urljoin(url, path_suffix)
+
+            # Éviter de retester la même URL absolue (ex: /.env) pour plusieurs pages
+            if target_url in _TESTED_TARGETS:
+                continue
+            _TESTED_TARGETS.add(target_url)
 
             headers = req_def.get("headers", {})
             body = req_def.get("body", None)

@@ -18,8 +18,12 @@ from utils import calculate_similarity, extract_form_fields, obfuscate_payload
 
 logger = logging.getLogger("webmapper.sqli")
 
-DELAY: Final[float] = 0.5
-TIMEOUT: Final[int] = 15  # Un peu plus long pour le time-based
+DELAY: float = 0.0
+TIMEOUT: Final[int] = 10  # Un peu plus long pour le time-based
+
+def _sleep():
+    if DELAY > 0:
+        _sleep()
 
 # Signatures d'erreurs (Error-based)
 
@@ -100,7 +104,7 @@ def _check_baseline_stability(session: requests.Session, url: str) -> tuple[str,
         res1 = session.get(url, timeout=TIMEOUT)
         t1 = time.perf_counter()
         
-        time.sleep(DELAY)
+        _sleep()
         
         t2 = time.perf_counter()
         res2 = session.get(url, timeout=TIMEOUT)
@@ -152,7 +156,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
             findings.append(f)
 
     # 1. Baseline
-    time.sleep(DELAY)
+    _sleep()
     baseline_text, page_is_stable, baseline_latency = _check_baseline_stability(session, url)
     if not baseline_text:
         return []
@@ -171,7 +175,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
         for payload in ERROR_PAYLOADS:
             test_params = {k: (v[0] + obfuscate_payload(payload, "sql_spaces") if k == param_name else v[0]) for k, v in url_params.items()}
             try:
-                time.sleep(DELAY)
+                _sleep()
                 res = session.get(url, params=test_params, timeout=TIMEOUT)
                 sig = _is_sqli_error(res.text)
                 if sig:
@@ -196,9 +200,9 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                     test_true = {k: (v[0] + obfuscate_payload(true_pay, "sql_spaces") if k == param_name else v[0]) for k, v in url_params.items()}
                     test_false = {k: (v[0] + obfuscate_payload(false_pay, "sql_spaces") if k == param_name else v[0]) for k, v in url_params.items()}
                     
-                    time.sleep(DELAY)
+                    _sleep()
                     res_true = session.get(url, params=test_true, timeout=TIMEOUT)
-                    time.sleep(DELAY)
+                    _sleep()
                     res_false = session.get(url, params=test_false, timeout=TIMEOUT)
 
                     sim_true = calculate_similarity(baseline_text, res_true.text)
@@ -223,7 +227,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
         for payload in TIME_PAYLOADS:
             test_params = {k: (v[0] + obfuscate_payload(payload, "sql_spaces") if k == param_name else v[0]) for k, v in url_params.items()}
             try:
-                time.sleep(DELAY)
+                _sleep()
                 res = session.get(url, params=test_params, timeout=TIMEOUT)
                 
                 # Vérifier le délai effectif
@@ -257,7 +261,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
         for payload in OOB_PAYLOADS:
             test_params = {k: (v[0] + obfuscate_payload(payload, "sql_spaces") if k == param_name else v[0]) for k, v in url_params.items()}
             try:
-                time.sleep(DELAY)
+                _sleep()
                 session.get(url, params=test_params, timeout=TIMEOUT)
             except Exception:
                 pass
@@ -274,7 +278,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
 
         # Baseline Formulaire
         try:
-            time.sleep(DELAY)
+            _sleep()
             if method == "POST":
                 form_baseline_res = session.post(target_url, data=template, timeout=TIMEOUT)
             else:
@@ -292,7 +296,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                 form_data = template.copy()
                 form_data[field_name] = original_val + obfuscate_payload(payload, "sql_spaces")
                 try:
-                    time.sleep(DELAY)
+                    _sleep()
                     res = session.post(target_url, data=form_data, timeout=TIMEOUT) if method == "POST" else session.get(target_url, params=form_data, timeout=TIMEOUT)
                     sig = _is_sqli_error(res.text)
                     if sig:
@@ -319,9 +323,9 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                     form_data_false[field_name] = original_val + obfuscate_payload(false_pay, "sql_spaces")
                     
                     try:
-                        time.sleep(DELAY)
+                        _sleep()
                         res_true = session.post(target_url, data=form_data_true, timeout=TIMEOUT) if method == "POST" else session.get(target_url, params=form_data_true, timeout=TIMEOUT)
-                        time.sleep(DELAY)
+                        _sleep()
                         res_false = session.post(target_url, data=form_data_false, timeout=TIMEOUT) if method == "POST" else session.get(target_url, params=form_data_false, timeout=TIMEOUT)
 
                         sim_true = calculate_similarity(form_baseline_text, res_true.text)
@@ -347,7 +351,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                 form_data = template.copy()
                 form_data[field_name] = original_val + obfuscate_payload(payload, "sql_spaces")
                 try:
-                    time.sleep(DELAY)
+                    _sleep()
                     res = session.post(target_url, data=form_data, timeout=TIMEOUT) if method == "POST" else session.get(target_url, params=form_data, timeout=TIMEOUT)
                     
                     if res.elapsed.total_seconds() >= time_threshold:
@@ -379,7 +383,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
     for header in target_headers:
         for payload in ERROR_PAYLOADS:
             try:
-                time.sleep(DELAY)
+                _sleep()
                 custom_headers = {header: obfuscate_payload(payload, "sql_spaces")}
                 res = session.get(url, headers=custom_headers, timeout=TIMEOUT)
                 sig = _is_sqli_error(res.text)
@@ -398,7 +402,7 @@ def scan(url: str, session: requests.Session) -> list[dict]:
     # 5. Check Second-order (basique)
     # Après avoir injecté des payloads OOB/Error dans tous les champs, on recharge la page de base.
     try:
-        time.sleep(DELAY)
+        _sleep()
         res_check = session.get(url, timeout=TIMEOUT)
         sig = _is_sqli_error(res_check.text)
         if sig:

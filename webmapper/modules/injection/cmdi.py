@@ -17,8 +17,8 @@ from utils import extract_form_fields
 
 logger = logging.getLogger("webmapper.cmdi")
 
-DELAY = 0.5   # Délai rate-limiting
-TIMEOUT = 10  # Timeout réseau de base
+DELAY = 0.0   # Délai rate-limiting (0.0 pour vitesse maximale)
+TIMEOUT = 8   # Timeout réseau de base
 
 # Payloads time-based : (payload_suffixe, délai_attendu_secondes)
 TIME_PAYLOADS = [
@@ -92,7 +92,8 @@ def scan(url: str, session: requests.Session) -> list[dict]:
         for payload, delay in TIME_PAYLOADS:
             test = {k: (v[0] + payload if k == param_name else v[0]) for k, v in url_params.items()}
             _, elapsed = _send(session, "GET", url, test)
-            time.sleep(DELAY)
+            if DELAY > 0:
+                time.sleep(DELAY)
             if elapsed >= delay:
                 add_finding({
                     "type": "COMMAND_INJECTION_TIME_BASED",
@@ -101,12 +102,15 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                     "detail": f"Injection de commande OS (Time-based) détectée sur le paramètre GET '{param_name}'.",
                     "evidence": f"Délai observé : {elapsed:.1f}s (attendu ≥ {delay}s) | Payload : {payload}",
                 })
+                break  # Vulnérabilité confirmée sur ce paramètre
 
         # 1.2 Error-based sur chaque paramètre
         for payload in ERROR_PAYLOADS:
             test = {k: (v[0] + payload if k == param_name else v[0]) for k, v in url_params.items()}
             text, _ = _send(session, "GET", url, test)
-            time.sleep(DELAY)
+            if DELAY > 0:
+                time.sleep(DELAY)
+            found_error = False
             for sig in ERROR_SIGNATURES:
                 if sig in text.lower():
                     add_finding({
@@ -116,6 +120,10 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                         "detail": f"Injection de commande OS (Error-based) détectée sur le paramètre GET '{param_name}'.",
                         "evidence": f"Signature : '{sig}' | Payload : {payload}",
                     })
+                    found_error = True
+                    break
+            if found_error:
+                break
 
     # 2. Formulaires HTML - helper partagé
     for form in soup.find_all("form"):
@@ -137,7 +145,8 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                 test = template.copy()
                 test[field_name] = original_val + payload
                 _, elapsed = _send(session, method, target_url, test)
-                time.sleep(DELAY)
+                if DELAY > 0:
+                    time.sleep(DELAY)
                 if elapsed >= delay:
                     add_finding({
                         "type": "COMMAND_INJECTION_TIME_BASED",
@@ -146,13 +155,16 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                         "detail": f"Injection de commande OS (Time-based) détectée sur le champ '{field_name}' du formulaire ({method}).",
                         "evidence": f"Délai : {elapsed:.1f}s | Payload : {payload}",
                     })
+                    break
 
             # 2.2 Error-based sur champ formulaire
             for payload in ERROR_PAYLOADS[:3]:
                 test = template.copy()
                 test[field_name] = original_val + payload
                 text, _ = _send(session, method, target_url, test)
-                time.sleep(DELAY)
+                if DELAY > 0:
+                    time.sleep(DELAY)
+                found_form_error = False
                 for sig in ERROR_SIGNATURES:
                     if sig in text.lower():
                         add_finding({
@@ -162,6 +174,10 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                             "detail": f"Injection de commande OS (Error-based) détectée sur le champ '{field_name}' du formulaire ({method}).",
                             "evidence": f"Signature : '{sig}' | Payload : {payload}",
                         })
+                        found_form_error = True
+                        break
+                if found_form_error:
+                    break
 
     # 3. Injection d'en-têtes HTTP
     target_headers = ["X-Forwarded-For", "User-Agent", "Referer"]
@@ -169,7 +185,8 @@ def scan(url: str, session: requests.Session) -> list[dict]:
         # Time-based sur en-têtes
         for payload, delay in TIME_PAYLOADS[:2]:
             try:
-                time.sleep(DELAY)
+                if DELAY > 0:
+                    time.sleep(DELAY)
                 start = time.time()
                 session.get(url, headers={header: payload}, timeout=TIMEOUT + 7)
                 elapsed = time.time() - start
@@ -181,14 +198,17 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                         "detail": f"Injection de commande OS (Time-based) détectée via l'en-tête HTTP '{header}'.",
                         "evidence": f"Délai : {elapsed:.1f}s | Payload : {payload}",
                     })
+                    break
             except Exception as exc:
                 logger.debug("Erreur test cmdi header time-based '%s' : %s", header, exc)
 
         # Error-based sur en-têtes
         for payload in ERROR_PAYLOADS[:2]:
             try:
-                time.sleep(DELAY)
+                if DELAY > 0:
+                    time.sleep(DELAY)
                 res = session.get(url, headers={header: payload}, timeout=TIMEOUT)
+                found_hdr_error = False
                 for sig in ERROR_SIGNATURES:
                     if sig in res.text.lower():
                         add_finding({
@@ -198,6 +218,10 @@ def scan(url: str, session: requests.Session) -> list[dict]:
                             "detail": f"Injection de commande OS (Error-based) détectée via l'en-tête HTTP '{header}'.",
                             "evidence": f"Signature : '{sig}' | Payload : {payload}",
                         })
+                        found_hdr_error = True
+                        break
+                if found_hdr_error:
+                    break
             except Exception as exc:
                 logger.debug("Erreur test cmdi header error-based '%s' : %s", header, exc)
 

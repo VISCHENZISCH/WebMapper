@@ -10,8 +10,15 @@ import time
 import urllib.parse
 import requests
 
-DELAY = 0.5
-TIMEOUT = 10
+DELAY = 0.0
+TIMEOUT = 8
+
+_tested_roots: set[str] = set()
+
+
+def reset_cache():
+    """Réinitialise les racines testées entre les sessions de scan."""
+    _tested_roots.clear()
 
 # Chemins sensibles à tester
 SENSITIVE_PATHS = [
@@ -84,9 +91,15 @@ def scan(url: str, session: requests.Session) -> list[dict]:
     parsed = urllib.parse.urlparse(base)
     root = f"{parsed.scheme}://{parsed.netloc}"
 
+    # Éviter de retester les 39 chemins sensibles N fois pour le même domaine racine
+    if root in _tested_roots:
+        return []
+    _tested_roots.add(root)
+
     for path in SENSITIVE_PATHS:
         target = root + path
-        time.sleep(DELAY)
+        if DELAY > 0:
+            time.sleep(DELAY)
         try:
             res = session.get(target, timeout=TIMEOUT, allow_redirects=True)
         except Exception:

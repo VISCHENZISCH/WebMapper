@@ -11,7 +11,7 @@ Logique de détection :
 import time
 import requests
 
-DELAY = 0.5   # Délai rate-limiting entre les requêtes
+DELAY = 0.0   # Délai rate-limiting entre les requêtes (0.0 pour vitesse maximale)
 
 # En-têtes critiques attendus, avec sévérité et description
 REQUIRED_HEADERS = [
@@ -125,7 +125,8 @@ def scan(url: str, session: requests.Session) -> list[dict]:
     :return:        Liste de findings structurés
     """
     findings = []
-    time.sleep(DELAY)
+    if DELAY > 0:
+        time.sleep(DELAY)
 
     try:
         response = session.get(url, timeout=10)
